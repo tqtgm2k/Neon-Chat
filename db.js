@@ -48,6 +48,43 @@ async function initDB() {
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await conn.execute(`
+    CREATE TABLE IF NOT EXISTS groups_chat (
+      id VARCHAR(64) PRIMARY KEY,
+      name VARCHAR(50) NOT NULL,
+      createdBy VARCHAR(64) NOT NULL,
+      avatar VARCHAR(10) DEFAULT '👥',
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await conn.execute(`
+    CREATE TABLE IF NOT EXISTS group_members (
+      groupId VARCHAR(64) NOT NULL,
+      userId VARCHAR(64) NOT NULL,
+      role ENUM('admin','member') DEFAULT 'member',
+      joinedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (groupId, userId)
+    )
+  `);
+  await conn.execute(`
+    CREATE TABLE IF NOT EXISTS group_messages (
+      id VARCHAR(64) PRIMARY KEY,
+      groupId VARCHAR(64) NOT NULL,
+      userId VARCHAR(64) NOT NULL,
+      username VARCHAR(32) NOT NULL,
+      color VARCHAR(7) DEFAULT '#00f5ff',
+      role VARCHAR(10) DEFAULT 'user',
+      badge VARCHAR(20) DEFAULT '',
+      type VARCHAR(10) DEFAULT 'text',
+      content TEXT,
+      imageData MEDIUMTEXT,
+      avatar MEDIUMTEXT,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_group (groupId),
+      INDEX idx_time (timestamp)
+    )
+  `);
+
   conn.release();
   console.log('MySQL connected & tables ready');
 }

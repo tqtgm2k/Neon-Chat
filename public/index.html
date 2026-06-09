@@ -973,6 +973,73 @@ select.form-input option { background: #0b0f1e; }
 }
 .img-upload-btn:hover { opacity: 1; }
 
+
+/* ── Sidebar tabs ── */
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sidebar-tab {
+  flex: 1;
+  padding: 10px 4px;
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+  letter-spacing: .3px;
+}
+.sidebar-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.sidebar-tab:hover { color: var(--text); }
+
+/* ── Group list ── */
+.group-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  border-radius: 10px;
+  margin: 3px 6px;
+  transition: background .15s;
+  position: relative;
+}
+.group-item:hover { background: rgba(0,245,255,.06); }
+.group-item.active { background: rgba(0,245,255,.1); border: 1px solid rgba(0,245,255,.2); }
+.group-avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: rgba(0,245,255,.15);
+  border: 2px solid rgba(0,245,255,.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.group-info { flex: 1; min-width: 0; }
+.group-name { font-weight: 700; font-size: 0.9rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.group-meta { font-size: 0.75rem; color: var(--text2); margin-top: 1px; }
+.group-badge {
+  background: var(--pink);
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ── Group chat header ── */
+.group-header-info { display: flex; flex-direction: column; }
+.group-header-name { font-size: 1rem; font-weight: 700; color: var(--cyan); }
+.group-header-meta { font-size: 0.75rem; color: var(--text2); }
 </style>
 </head>
 <body>
@@ -1062,10 +1129,27 @@ select.form-input option { background: #0b0f1e; }
   <div class="main-layout">
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
-      <div class="sidebar-section">
-        Người dùng <span class="count" id="userCount">0</span>
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" id="tabUsers" onclick="switchSidebarTab('users')">👥 Người dùng</button>
+        <button class="sidebar-tab" id="tabGroups" onclick="switchSidebarTab('groups')">💬 Groups</button>
       </div>
-      <div class="user-list" id="userList"></div>
+
+      <!-- Tab Users -->
+      <div id="sidebarUsers">
+        <div class="sidebar-section">
+          Người dùng <span class="count" id="userCount">0</span>
+        </div>
+        <div class="user-list" id="userList"></div>
+      </div>
+
+      <!-- Tab Groups -->
+      <div id="sidebarGroups" style="display:none;">
+        <div class="sidebar-section" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Groups</span>
+          <button onclick="openCreateGroup()" style="background:var(--cyan);color:#000;border:none;border-radius:6px;padding:3px 10px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">+ Tạo</button>
+        </div>
+        <div id="groupList"></div>
+      </div>
     </div>
 
     <!-- Chat -->
@@ -1088,6 +1172,38 @@ select.form-input option { background: #0b0f1e; }
     <button class="send-btn" onclick="sendMessage()">➤</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+   CREATE GROUP MODAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="createGroupModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">👥 TẠO GROUP</span>
+      <button class="modal-close" onclick="closeModal('createGroupModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tên group</label>
+        <input class="form-input" id="groupName" maxlength="50" placeholder="Nhập tên group...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icon</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;" id="groupIconPicker">
+          👥 💬 🎮 🎵 📚 🏆 🔥 ⚡ 🌙 🎯 💡 🎨
+        </div>
+        <input class="form-input" id="groupIcon" value="👥" style="margin-top:8px;width:60px;text-align:center;font-size:1.3rem;" maxlength="2">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Thêm thành viên</label>
+        <input class="form-input" id="groupMemberSearch" placeholder="🔍 Tìm user..." oninput="renderGroupMemberPicker()">
+        <div id="groupMemberPicker" style="max-height:150px;overflow-y:auto;margin-top:8px;"></div>
+      </div>
+      <div id="selectedMembersPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+      <button class="btn btn-primary" style="margin-top:16px;" onclick="createGroup()">👥 Tạo group</button>
     </div>
   </div>
 </div>
@@ -1381,6 +1497,7 @@ function loginSuccess(tok, user) {
   showChat();
   initSocket();
   loadMessages();
+  loadMyGroups();
   if (['admin','owner'].includes(user.role)) {
     document.getElementById('adminBtn').style.display = '';
   }
@@ -1448,6 +1565,44 @@ function initSocket() {
     onlineIds = ids;
     document.getElementById('onlineCount').textContent = ids.length + ' online';
     renderUserList();
+  });
+
+  socket.on('group_added', (group) => {
+    if (!myGroups.find(g => g.id === group.id)) {
+      myGroups.push(group);
+      renderGroupList();
+      toast(`Bạn được thêm vào group "${group.name}"!`, 'success');
+    }
+  });
+
+  socket.on('group_updated', (group) => {
+    const idx = myGroups.findIndex(g => g.id === group.id);
+    if (idx !== -1) { myGroups[idx] = group; renderGroupList(); }
+  });
+
+  socket.on('group_deleted', ({ groupId }) => {
+    myGroups = myGroups.filter(g => g.id !== groupId);
+    if (currentGroupId === groupId) backToMain();
+    renderGroupList();
+    toast('Group đã bị xóa', 'error');
+  });
+
+  socket.on('new_group_message', (msg) => {
+    if (msg.groupId === currentGroupId) {
+      const atBottom = isNearBottom();
+      appendMessage(msg);
+      if (atBottom) scrollToBottom();
+    } else {
+      groupUnread[msg.groupId] = (groupUnread[msg.groupId] || 0) + 1;
+      renderGroupList();
+    }
+  });
+
+  socket.on('group_message_deleted', ({ groupId, messageId }) => {
+    if (groupId === currentGroupId) {
+      const el = document.getElementById('msg-' + messageId);
+      if (el) el.remove();
+    }
   });
 
   socket.on('users_update', (users) => {
@@ -1535,7 +1690,11 @@ function sendMessage() {
   const input = document.getElementById('msgInput');
   const content = input.value.trim();
   if (!content || !socket) return;
-  socket.emit('send_message', { content, token });
+  if (currentGroupId) {
+    socket.emit('send_group_message', { groupId: currentGroupId, content, token });
+  } else {
+    socket.emit('send_message', { content, token });
+  }
   input.value = '';
   input.style.height = 'auto';
   input.focus();
@@ -1611,6 +1770,167 @@ function openImage(src) {
 
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
+}
+
+// ══════════════════════════════
+// GROUP FUNCTIONS
+// ══════════════════════════════
+
+let myGroups = [];
+let currentGroupId = null;
+let selectedMemberIds = [];
+let groupUnread = {};
+
+function switchSidebarTab(tab) {
+  document.getElementById('sidebarUsers').style.display = tab === 'users' ? '' : 'none';
+  document.getElementById('sidebarGroups').style.display = tab === 'groups' ? '' : 'none';
+  document.getElementById('tabUsers').classList.toggle('active', tab === 'users');
+  document.getElementById('tabGroups').classList.toggle('active', tab === 'groups');
+  if (tab === 'groups') renderGroupList();
+}
+
+function renderGroupList() {
+  const list = document.getElementById('groupList');
+  if (!myGroups.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:0.85rem;">Chưa có group nào<br>Bấm + Tạo để tạo mới</div>';
+    return;
+  }
+  list.innerHTML = myGroups.map(g => {
+    const isActive = currentGroupId === g.id;
+    const unread = groupUnread[g.id] || 0;
+    return `
+      <div class="group-item ${isActive ? 'active' : ''}" onclick="openGroupChat('${g.id}')">
+        <div class="group-avatar">${g.avatar || '👥'}</div>
+        <div class="group-info">
+          <div class="group-name">${escHtml(g.name)}</div>
+          <div class="group-meta">${g.members ? g.members.length : 0} thành viên</div>
+        </div>
+        ${unread ? `<div class="group-badge">${unread}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+async function loadMyGroups() {
+  try {
+    const res = await fetch('/api/groups', { headers: { 'x-token': token } });
+    if (res.ok) {
+      myGroups = await res.json();
+      renderGroupList();
+    }
+  } catch(e) {}
+}
+
+async function openGroupChat(groupId) {
+  currentGroupId = groupId;
+  groupUnread[groupId] = 0;
+  const group = myGroups.find(g => g.id === groupId);
+  if (!group) return;
+
+  // Cập nhật header
+  const headerLogo = document.querySelector('.header-logo');
+  headerLogo.innerHTML = `
+    <div class="logo-dot"></div>
+    <div class="group-header-info">
+      <div class="group-header-name">${group.avatar} ${escHtml(group.name)}</div>
+      <div class="group-header-meta">${group.members.length} thành viên</div>
+    </div>
+    <button onclick="backToMain()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:0.8rem;margin-left:8px;">✕</button>`;
+
+  // Load tin nhắn group
+  const container = document.getElementById('messages');
+  container.innerHTML = `<div class="msg-system">💬 ${escHtml(group.name)}</div>`;
+  try {
+    const res = await fetch(`/api/groups/${groupId}/messages`, { headers: { 'x-token': token } });
+    if (res.ok) {
+      const msgs = await res.json();
+      msgs.forEach(m => appendMessage(m, false));
+      scrollToBottom();
+    }
+  } catch(e) {}
+
+  renderGroupList();
+}
+
+function backToMain() {
+  currentGroupId = null;
+  document.querySelector('.header-logo').innerHTML = `<div class="logo-dot"></div> NEON CHAT`;
+  const container = document.getElementById('messages');
+  container.innerHTML = '<div class="msg-system">⚡ Chào mừng đến Neon Chat!</div>';
+  // Load lại tin nhắn chính
+  loadMessages();
+  renderGroupList();
+}
+
+function openCreateGroup() {
+  selectedMemberIds = [];
+  document.getElementById('groupName').value = '';
+  document.getElementById('groupIcon').value = '👥';
+  document.getElementById('groupMemberSearch').value = '';
+  renderGroupMemberPicker();
+  renderSelectedMembers();
+  openModal('createGroupModal');
+}
+
+function renderGroupMemberPicker() {
+  const keyword = document.getElementById('groupMemberSearch').value.toLowerCase();
+  const picker = document.getElementById('groupMemberPicker');
+  const available = allUsers.filter(u => u.id !== me.id &&
+    (u.username.toLowerCase().includes(keyword) || !keyword));
+  if (!available.length) { picker.innerHTML = '<div style="color:var(--text2);font-size:0.85rem;padding:8px;">Không tìm thấy</div>'; return; }
+  picker.innerHTML = available.map(u => {
+    const selected = selectedMemberIds.includes(u.id);
+    const color = u.color || '#c8d8ff';
+    return `
+      <div onclick="toggleGroupMember('${u.id}')" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;background:${selected ? 'rgba(0,245,255,.1)' : 'transparent'};border:1px solid ${selected ? 'rgba(0,245,255,.3)' : 'transparent'};margin-bottom:4px;transition:.15s;">
+        <div style="width:28px;height:28px;border-radius:50%;background:${color}22;color:${color};display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;flex-shrink:0;">
+          ${u.avatar ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : escHtml(initials(u.username))}
+        </div>
+        <span style="color:${color};font-weight:600;">${escHtml(u.username)}</span>
+        <span style="margin-left:auto;color:${selected ? 'var(--cyan)' : 'var(--text2)'};">${selected ? '✓' : '+'}</span>
+      </div>`;
+  }).join('');
+}
+
+function toggleGroupMember(userId) {
+  if (selectedMemberIds.includes(userId)) {
+    selectedMemberIds = selectedMemberIds.filter(id => id !== userId);
+  } else {
+    selectedMemberIds.push(userId);
+  }
+  renderGroupMemberPicker();
+  renderSelectedMembers();
+}
+
+function renderSelectedMembers() {
+  const preview = document.getElementById('selectedMembersPreview');
+  if (!selectedMemberIds.length) { preview.innerHTML = ''; return; }
+  preview.innerHTML = selectedMemberIds.map(uid => {
+    const u = allUsers.find(u => u.id === uid);
+    if (!u) return '';
+    return `<span style="background:rgba(0,245,255,.1);border:1px solid rgba(0,245,255,.3);border-radius:20px;padding:3px 10px;font-size:0.8rem;color:var(--cyan);">
+      ${escHtml(u.username)} <span onclick="toggleGroupMember('${uid}')" style="cursor:pointer;color:var(--pink);">✕</span>
+    </span>`;
+  }).join('');
+}
+
+async function createGroup() {
+  const name = document.getElementById('groupName').value.trim();
+  const avatar = document.getElementById('groupIcon').value.trim() || '👥';
+  if (!name) { toast('Nhập tên group!', 'error'); return; }
+  try {
+    const res = await fetch('/api/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-token': token },
+      body: JSON.stringify({ name, avatar, memberIds: selectedMemberIds })
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi tạo group', 'error'); return; }
+    myGroups.push(data);
+    renderGroupList();
+    closeModal('createGroupModal');
+    toast(`Đã tạo group "${name}"!`, 'success');
+    switchSidebarTab('groups');
+  } catch { toast('Lỗi kết nối', 'error'); }
 }
 
 async function copyMessage(btn) {

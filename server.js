@@ -56,6 +56,7 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 let users = [];
 let messages = [];
+let groups = [];
 let dbReady = false;
 const onlineSockets = new Map(); // socketId → userId
 
@@ -86,7 +87,15 @@ async function initData() {
     const [msgRows] = await pool.execute('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 500');
     messages = msgRows.reverse();
 
-    console.log(`Loaded ${users.length} users, ${messages.length} messages from MySQL`);
+    // Load groups
+    const [groupRows] = await pool.execute('SELECT * FROM groups_chat ORDER BY createdAt ASC');
+    groups = groupRows;
+    for (const g of groups) {
+      const [members] = await pool.execute('SELECT * FROM group_members WHERE groupId = ?', [g.id]);
+      g.members = members;
+    }
+
+    console.log(`Loaded ${users.length} users, ${messages.length} messages, ${groups.length} groups from MySQL`);
   } catch (err) {
     console.error('MySQL error, falling back to JSON:', err.message);
     dbReady = false;
@@ -323,6 +332,119 @@ app.put('/api/users/:id', requireAuth, (req, res) => {
   res.json({ success: true, user: publicUser(users[idx]) });
 });
 
+// ── Group API ────────────────────────────────
+
+// Lấy danh sách group của user
+app.get('/api/groups', requireAuth, (req, res) => {
+  const myGroups = groups.filter(g => g.members.some(m => m.userId === req.user.id));
+  res.json(myGroups);
+});
+
+// Tạo group mới
+app.post('/api/groups', requireAuth, async (req, res) => {
+  const { name, memberIds, avatar } = req.body || {};
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Tên group không được trống' });
+  if (name.trim().length > 50) return res.status(400).json({ error: 'Tên tối đa 50 ký tự' });
+
+  const groupId = 'g' + Date.now();
+  const newGroup = {
+    id: groupId,
+    name: name.trim(),
+    createdBy: req.user.id,
+    avatar: avatar || '👥',
+    createdAt: new Date().toISOString(),
+    members: []
+  };
+
+  // Thêm người tạo làm admin
+  const allMemberIds = [...new Set([req.user.id, ...(memberIds || [])])];
+
+  if (dbReady) {
+    await pool.execute('INSERT INTO groups_chat (id, name, createdBy, avatar) VALUES (?,?,?,?)',
+      [groupId, newGroup.name, req.user.id, newGroup.avatar]);
+    for (const uid of allMemberIds) {
+      const role = uid === req.user.id ? 'admin' : 'member';
+      await pool.execute('INSERT INTO group_members (groupId, userId, role) VALUES (?,?,?)',
+        [groupId, uid, role]);
+      newGroup.members.push({ groupId, userId: uid, role });
+    }
+  }
+
+  groups.push(newGroup);
+  // Thông báo cho các thành viên
+  for (const [sid, uid] of onlineSockets) {
+    if (allMemberIds.includes(uid)) {
+      io.to(sid).emit('group_added', newGroup);
+    }
+  }
+  res.json(newGroup);
+});
+
+// Xóa group
+app.delete('/api/groups/:id', requireAuth, async (req, res) => {
+  const group = groups.find(g => g.id === req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  const member = group.members.find(m => m.userId === req.user.id);
+  if (!member || member.role !== 'admin') return res.status(403).json({ error: 'Chỉ admin group mới xóa được' });
+
+  if (dbReady) {
+    await pool.execute('DELETE FROM groups_chat WHERE id = ?', [req.params.id]);
+    await pool.execute('DELETE FROM group_members WHERE groupId = ?', [req.params.id]);
+    await pool.execute('DELETE FROM group_messages WHERE groupId = ?', [req.params.id]);
+  }
+  groups = groups.filter(g => g.id !== req.params.id);
+  io.emit('group_deleted', { groupId: req.params.id });
+  res.json({ success: true });
+});
+
+// Thêm thành viên vào group
+app.post('/api/groups/:id/members', requireAuth, async (req, res) => {
+  const group = groups.find(g => g.id === req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  const me = group.members.find(m => m.userId === req.user.id);
+  if (!me || me.role !== 'admin') return res.status(403).json({ error: 'Chỉ admin group mới thêm được' });
+  const { userId } = req.body || {};
+  if (group.members.find(m => m.userId === userId)) return res.status(400).json({ error: 'Đã là thành viên' });
+
+  if (dbReady) {
+    await pool.execute('INSERT INTO group_members (groupId, userId, role) VALUES (?,?,?)', [group.id, userId, 'member']);
+  }
+  group.members.push({ groupId: group.id, userId, role: 'member' });
+  for (const [sid, uid] of onlineSockets) {
+    if (uid === userId) io.to(sid).emit('group_added', group);
+  }
+  io.emit('group_updated', group);
+  res.json({ success: true });
+});
+
+// Rời group
+app.delete('/api/groups/:id/members/:userId', requireAuth, async (req, res) => {
+  const group = groups.find(g => g.id === req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  const targetId = req.params.userId;
+  const me = group.members.find(m => m.userId === req.user.id);
+  if (targetId !== req.user.id && (!me || me.role !== 'admin'))
+    return res.status(403).json({ error: 'Không có quyền' });
+
+  if (dbReady) {
+    await pool.execute('DELETE FROM group_members WHERE groupId = ? AND userId = ?', [group.id, targetId]);
+  }
+  group.members = group.members.filter(m => m.userId !== targetId);
+  io.emit('group_updated', group);
+  res.json({ success: true });
+});
+
+// Lấy tin nhắn group
+app.get('/api/groups/:id/messages', requireAuth, async (req, res) => {
+  const group = groups.find(g => g.id === req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (!group.members.find(m => m.userId === req.user.id)) return res.status(403).json({ error: 'Không phải thành viên' });
+  if (!dbReady) return res.json([]);
+  const [rows] = await pool.execute(
+    'SELECT * FROM group_messages WHERE groupId = ? ORDER BY timestamp DESC LIMIT 80', [req.params.id]);
+  res.json(rows.reverse());
+});
+
 // Admin/Owner: reset user password
 app.post('/api/users/:id/reset-password', requireAuth, async (req, res) => {
   if (!['admin', 'owner'].includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
@@ -445,6 +567,72 @@ io.on('connection', (socket) => {
         pool.execute('DELETE FROM messages WHERE id = ?', [messageId]).catch(console.error);
       }
       io.emit('message_deleted', { messageId });
+    }
+  });
+
+  socket.on('send_group_message', async ({ groupId, content, token, type, imageData }) => {
+    const payload = verifyToken(token);
+    if (!payload) return;
+    const user = users.find(u => u.id === payload.userId);
+    if (!user || user.banned) return;
+    const group = groups.find(g => g.id === groupId);
+    if (!group || !group.members.find(m => m.userId === user.id)) return;
+
+    const msgType = type === 'image' ? 'image' : 'text';
+    if (msgType === 'text') {
+      const text = String(content || '').trim();
+      if (!text || text.length > 2000) return;
+    } else {
+      if (!imageData || !imageData.startsWith('data:image/')) return;
+      if (imageData.length > 3 * 1024 * 1024) return;
+    }
+
+    const msg = {
+      id: Date.now().toString() + Math.random().toString(36).slice(2,6),
+      groupId,
+      userId: user.id,
+      username: user.username,
+      color: user.color,
+      role: user.role,
+      badge: user.badge || '',
+      type: msgType,
+      content: msgType === 'text' ? String(content).trim() : '',
+      imageData: msgType === 'image' ? imageData : null,
+      avatar: user.avatar || null,
+      timestamp: new Date().toISOString()
+    };
+
+    if (dbReady) {
+      await pool.execute(`INSERT INTO group_messages (id, groupId, userId, username, color, role, badge, type, content, imageData, avatar, timestamp)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [msg.id, groupId, msg.userId, msg.username, msg.color, msg.role, msg.badge, msg.type, msg.content, msg.imageData, msg.avatar, new Date(msg.timestamp)]);
+    }
+
+    // Gửi cho tất cả thành viên group đang online
+    for (const [sid, uid] of onlineSockets) {
+      if (group.members.find(m => m.userId === uid)) {
+        io.to(sid).emit('new_group_message', msg);
+      }
+    }
+  });
+
+  socket.on('delete_group_message', async ({ groupId, messageId, token }) => {
+    const payload = verifyToken(token);
+    if (!payload) return;
+    const user = users.find(u => u.id === payload.userId);
+    if (!user) return;
+    const group = groups.find(g => g.id === groupId);
+    if (!group) return;
+    const member = group.members.find(m => m.userId === user.id);
+    if (!member || (member.role !== 'admin' && !['admin','owner'].includes(user.role))) return;
+
+    if (dbReady) {
+      await pool.execute('DELETE FROM group_messages WHERE id = ? AND groupId = ?', [messageId, groupId]);
+    }
+    for (const [sid, uid] of onlineSockets) {
+      if (group.members.find(m => m.userId === uid)) {
+        io.to(sid).emit('group_message_deleted', { groupId, messageId });
+      }
     }
   });
 
