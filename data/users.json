@@ -1,0 +1,68 @@
+[
+  {
+    "id": "owner-001",
+    "username": "owner",
+    "password": "03323dcebd455be8ddb0974dfd6d5939b3ba7caa082ed36a487c6df09976e0d9",
+    "role": "owner",
+    "color": "#ff00ff",
+    "bio": "👑 Neon Chat Owner",
+    "badge": "⚡ OWNER",
+    "createdAt": "2026-06-06T19:11:48.726Z",
+    "banned": false
+  },
+  {
+    "id": "admin-001",
+    "username": "admin",
+    "password": "e929af9120495d924851f6a682ac0684d1e11818d3fb41c4ac013bba92c57e34",
+    "role": "admin",
+    "color": "#00ffff",
+    "bio": "🛡️ Neon Chat Admin",
+    "badge": "🛡️ ADMIN",
+    "createdAt": "2026-06-06T19:11:48.726Z",
+    "banned": false
+  },
+  {
+    "id": "user-001",
+    "username": "user1",
+    "password": "edc0c77538cdf6069e70a68502d0f79f72cf227a1a738736defe32f1ffbc2b4a",
+    "role": "user",
+    "color": "#ff6b35",
+    "bio": "",
+    "badge": "",
+    "createdAt": "2026-06-06T19:11:48.726Z",
+    "banned": false
+  },
+  {
+    "id": "user-002",
+    "username": "user2",
+    "password": "4cdb50d21358f7e07ed785cdb26183743d44c3e560bdf670bd3edfcf5ddd5e10",
+    "role": "user",
+    "color": "#00ff88",
+    "bio": "",
+    "badge": "",
+    "createdAt": "2026-06-06T19:11:48.726Z",
+    "banned": false
+  },
+  {
+    "id": "u1780967640895",
+    "username": "Toan42468",
+    "password": "f61a6c60fbf2b48f2683519fdebb32c61f2b360d3a49b58c26c72c258cbc4144",
+    "role": "user",
+    "color": "#ffaa00",
+    "bio": "",
+    "badge": "",
+    "createdAt": "2026-06-09T01:14:00.895Z",
+    "banned": false
+  },
+  {
+    "id": "u1780967750888",
+    "username": "khanh123",
+    "password": "5aed5f2b64d2c6dd21d32e8fd34861d1dd413e718d200df935f57a573a169bb6",
+    "role": "user",
+    "color": "#ff88cc",
+    "bio": "",
+    "badge": "",
+    "createdAt": "2026-06-09T01:15:50.890Z",
+    "banned": false
+  }
+]

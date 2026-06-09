@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>⚡ Neon Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   NEON CHAT — CYBERPUNK DESIGN SYSTEM
+═══════════════════════════════════════ */
+:root {
+  --bg:       #06080f;
+  --bg2:      #0b0f1e;
+  --bg3:      #111827;
+  --panel:    rgba(8, 14, 35, 0.92);
+  --border:   rgba(0, 245, 255, 0.18);
+  --border2:  rgba(191, 0, 255, 0.2);
+  --cyan:     #00f5ff;
+  --pink:     #ff007f;
+  --purple:   #bf00ff;
+  --green:    #00ff88;
+  --yellow:   #ffcc00;
+  --text:     #c8d8ff;
+  --text2:    #7888bb;
+  --owner-c:  #ff00ff;
+  --admin-c:  #00f5ff;
+  --user-c:   #c8d8ff;
+  --r:        8px;
+  --glow-c:   0 0 12px #00f5ff88, 0 0 32px #00f5ff22;
+  --glow-p:   0 0 12px #bf00ff88, 0 0 32px #bf00ff22;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  overflow: hidden;
+  overflow-y: auto;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
+
+/* ── Neon text ── */
+.neon-cyan { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+.neon-pink { color: var(--pink); text-shadow: 0 0 8px var(--pink); }
+.neon-purple { color: var(--purple); text-shadow: 0 0 8px var(--purple); }
+.neon-green { color: var(--green); text-shadow: 0 0 8px var(--green); }
+
+/* ────────────────────────────────────
+   BACKGROUND GRID EFFECT
+──────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,245,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,255,.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,245,255,.08) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 40% at 100% 100%, rgba(191,0,255,.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ────────────────────────────────────
+   SCREEN MANAGEMENT
+──────────────────────────────────── */
+.screen { display: none; position: relative; z-index: 1; }
+.screen.active { display: flex; }
+
+/* ────────────────────────────────────
+   LOGIN / REGISTER SCREEN
+──────────────────────────────────── */
+#authScreen {
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 400px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px 32px;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 0 40px rgba(0,245,255,.08), 0 24px 60px rgba(0,0,0,.6);
+  animation: slideUp .5s cubic-bezier(.22,1,.36,1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-logo .logo-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--cyan);
+  text-shadow: 0 0 20px var(--cyan), 0 0 40px rgba(0,245,255,.4);
+  letter-spacing: 4px;
+  display: block;
+}
+
+.auth-logo .logo-sub {
+  font-size: 0.8rem;
+  color: var(--text2);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.auth-logo .logo-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 8px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { filter: drop-shadow(0 0 8px var(--cyan)); }
+  50% { filter: drop-shadow(0 0 20px var(--cyan)); }
+}
+
+/* Tab switcher */
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 28px;
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .25s;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.auth-tab.active {
+  background: rgba(0,245,255,.12);
+  color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan);
+}
+
+/* Form elements */
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.form-input {
+  width: 100%;
+  background: rgba(0,0,0,.4);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  padding: 11px 14px;
+  outline: none;
+  transition: border .25s, box-shadow .25s;
+}
+.form-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px rgba(0,245,255,.12);
+}
+.form-input::placeholder { color: var(--text2); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--r);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all .2s;
+  text-transform: uppercase;
+}
+.btn-primary {
+  background: linear-gradient(135deg, rgba(0,245,255,.2), rgba(191,0,255,.2));
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  width: 100%;
+  text-shadow: 0 0 8px var(--cyan);
+  box-shadow: 0 0 20px rgba(0,245,255,.15);
+  margin-top: 8px;
+}
+.btn-primary:hover { background: rgba(0,245,255,.25); box-shadow: 0 0 30px rgba(0,245,255,.3); }
+.btn-primary:active { transform: scale(.98); }
+
+.auth-error {
+  background: rgba(255,0,127,.12);
+  border: 1px solid rgba(255,0,127,.4);
+  border-radius: var(--r);
+  color: var(--pink);
+  padding: 10px 14px;
+  margin-top: 12px;
+  font-size: 0.9rem;
+  display: none;
+}
+.auth-error.show { display: block; }
+
+/* ────────────────────────────────────
+   MAIN CHAT SCREEN
+──────────────────────────────────── */
+#chatScreen {
+  height: var(--app-height);
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 56px;
+  background: rgba(6, 10, 30, 0.95);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+.header-logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--cyan);
+  text-shadow: 0 0 12px var(--cyan);
+  letter-spacing: 3px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header-logo .logo-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+  animation: blink 1.5s ease-in-out infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+.header-spacer { flex: 1; }
+.header-online {
+  font-size: 0.82rem;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.online-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+.header-actions { display: flex; gap: 6px; }
+.icon-btn {
+  background: rgba(0,245,255,.08);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all .2s;
+  font-family: inherit;
+}
+.icon-btn:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: var(--glow-c); }
+
+/* Main layout */
+.main-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: rgba(8, 12, 28, 0.95);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform .3s;
+}
+.sidebar.collapsed { display: none; }
+
+.sidebar-section {
+  padding: 10px 12px 6px;
+  font-size: 0.7rem;
+  color: var(--text2);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(0,245,255,.06);
+}
+.sidebar-section .count {
+  background: rgba(0,245,255,.15);
+  color: var(--cyan);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  min-width: 20px;
+  text-align: center;
+}
+
+.user-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 4px;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .15s;
+  position: relative;
+}
+.user-item:hover { background: rgba(0,245,255,.07); }
+
+.user-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  position: relative;
+  border: 2px solid transparent;
+}
+.user-avatar.owner { border-color: var(--owner-c); box-shadow: 0 0 8px rgba(255,0,255,.4); }
+.user-avatar.admin { border-color: var(--admin-c); box-shadow: 0 0 8px rgba(0,245,255,.3); }
+
+.status-dot {
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--bg2);
+  background: var(--text2);
+}
+.status-dot.online { background: var(--green); box-shadow: 0 0 5px var(--green); }
+
+.user-info-small { flex: 1; overflow: hidden; }
+.user-name-small {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-role-small {
+  font-size: 0.7rem;
+  color: var(--text2);
+  letter-spacing: .5px;
+}
+
+/* ── Chat area ── */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Messages ── */
+.msg {
+  display: flex;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  animation: fadeIn .2s ease;
+  align-items: flex-start;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.msg:hover { background: rgba(255,255,255,.03); }
+.msg:hover .msg-delete { opacity: 1; }
+
+.msg-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.msg-body { flex: 1; min-width: 0; }
+.msg-header { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.msg-username {
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity .2s;
+}
+.msg-username:hover { opacity: .75; }
+.msg-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+.badge-owner { background: rgba(255,0,255,.15); color: var(--owner-c); border: 1px solid rgba(255,0,255,.3); }
+.badge-admin { background: rgba(0,245,255,.12); color: var(--admin-c); border: 1px solid rgba(0,245,255,.25); }
+.msg-time { font-size: 0.7rem; color: var(--text2); }
+.msg-content {
+  margin-top: 3px;
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: pre-wrap;
+  color: var(--text);
+}
+.msg-delete {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--pink);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 0.85rem;
+  transition: all .2s;
+  flex-shrink: 0;
+  align-self: center;
+}
+.msg-delete:hover { background: rgba(255,0,127,.15); border-radius: 4px; }
+
+/* System message */
+.msg-system {
+  text-align: center;
+  color: var(--text2);
+  font-size: 0.8rem;
+  padding: 6px 0;
+  letter-spacing: .5px;
+}
+
+/* ── Typing indicator ── */
+.typing-bar {
+  height: 22px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+.typing-dots span {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--cyan);
+  margin: 0 1.5px;
+  animation: typingDot 1.2s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: .2s; }
+.typing-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes typingDot {
+  0%, 80%, 100% { transform: scale(.6); opacity: .4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Input area ── */
+.input-area {
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--border);
+  background: rgba(6, 10, 25, 0.95);
+  flex-shrink: 0;
+}
+.input-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  background: rgba(0,0,0,.3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  transition: border .2s, box-shadow .2s;
+}
+.input-wrap:focus-within {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px rgba(0,245,255,.08);
+}
+#msgInput {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  outline: none;
+  resize: none;
+  max-height: 120px;
+  line-height: 1.4;
+}
+#msgInput::placeholder { color: var(--text2); }
+.send-btn {
+  background: linear-gradient(135deg, rgba(0,245,255,.25), rgba(191,0,255,.15));
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all .2s;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+.send-btn:hover { background: rgba(0,245,255,.3); box-shadow: var(--glow-c); }
+
+/* ────────────────────────────────────
+   MODALS
+──────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: modalFade .2s ease;
+}
+@keyframes modalFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 60px rgba(0,245,255,.1), 0 40px 80px rgba(0,0,0,.7);
+  animation: modalSlide .3s cubic-bezier(.22,1,.36,1);
+}
+@keyframes modalSlide {
+  from { transform: scale(.9) translateY(20px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1rem;
+  color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan);
+  letter-spacing: 2px;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all .2s;
+}
+.modal-close:hover { color: var(--pink); background: rgba(255,0,127,.1); }
+.modal-body { padding: 24px; }
+
+/* ── Profile modal ── */
+.profile-avatar-big {
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 900;
+  margin: 0 auto 20px;
+  border: 3px solid var(--border);
+}
+.color-picker-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.color-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all .2s;
+}
+.color-dot:hover { transform: scale(1.2); }
+.color-dot.selected { border-color: white; box-shadow: 0 0 10px currentColor; }
+
+/* ── Admin panel ── */
+.admin-user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: rgba(0,0,0,.2);
+  transition: border .2s;
+}
+.admin-user-card:hover { border-color: rgba(0,245,255,.3); }
+.admin-user-info { flex: 1; min-width: 0; }
+.admin-user-name {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-user-meta { font-size: 0.8rem; color: var(--text2); margin-top: 2px; }
+.admin-actions { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; }
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  background: none;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-ban  { color: var(--pink); border-color: rgba(255,0,127,.4); }
+.btn-ban:hover { background: rgba(255,0,127,.15); }
+.btn-unban { color: var(--green); border-color: rgba(0,255,136,.4); }
+.btn-unban:hover { background: rgba(0,255,136,.15); }
+.btn-admin { color: var(--cyan); border-color: rgba(0,245,255,.4); }
+.btn-admin:hover { background: rgba(0,245,255,.15); }
+.btn-demote { color: var(--yellow); border-color: rgba(255,204,0,.4); }
+.btn-demote:hover { background: rgba(255,204,0,.15); }
+.btn-delete { color: var(--pink); border-color: rgba(255,0,127,.4); }
+.btn-delete:hover { background: rgba(255,0,127,.2); }
+.btn-danger { background: rgba(255,0,127,.15); color: var(--pink); border: 1px solid rgba(255,0,127,.4); }
+.btn-success { background: rgba(0,255,136,.1); color: var(--green); border: 1px solid rgba(0,255,136,.3); }
+
+/* Banned badge */
+.badge-banned { background: rgba(255,0,127,.15); color: var(--pink); border: 1px solid rgba(255,0,127,.3); font-size: 0.65rem; padding: 1px 5px; border-radius: 4px; }
+
+/* ── Toast notifications ── */
+.toast-container {
+  position: fixed;
+  top: 70px;
+  right: 16px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  backdrop-filter: blur(12px);
+  animation: toastIn .3s cubic-bezier(.22,1,.36,1);
+  max-width: 300px;
+  border: 1px solid;
+  pointer-events: auto;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.toast.success { background: rgba(0,255,136,.1); border-color: rgba(0,255,136,.4); color: var(--green); }
+.toast.error   { background: rgba(255,0,127,.1); border-color: rgba(255,0,127,.4); color: var(--pink); }
+.toast.info    { background: rgba(0,245,255,.1); border-color: rgba(0,245,255,.4); color: var(--cyan); }
+@keyframes toastOut {
+  to { opacity: 0; transform: translateX(30px); }
+}
+
+/* ── Spinner ── */
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(0,245,255,.2);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+/* ── Role colors ── */
+.role-owner { color: var(--owner-c) !important; }
+.role-admin { color: var(--admin-c) !important; }
+.role-user  { color: var(--user-c); }
+
+/* ── User profile popup ── */
+#userPopup {
+  position: fixed;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  width: 220px;
+  z-index: 200;
+  box-shadow: 0 0 30px rgba(0,245,255,.1), 0 20px 50px rgba(0,0,0,.6);
+  display: none;
+  backdrop-filter: blur(16px);
+}
+#userPopup.show { display: block; animation: fadeIn .15s ease; }
+.popup-avatar {
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 900;
+  margin: 0 auto 10px;
+}
+.popup-name { text-align: center; font-weight: 700; font-size: 1rem; }
+.popup-role { text-align: center; font-size: 0.78rem; color: var(--text2); margin-top: 2px; }
+.popup-bio { font-size: 0.8rem; color: var(--text2); text-align: center; margin-top: 8px; min-height: 16px; }
+
+/* ── Mobile toggle ── */
+.sidebar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 6px 8px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .sidebar { 
+    position: absolute;
+    left: 0; top: 56px; bottom: 0;
+    z-index: 20;
+    width: 200px;
+    transform: translateX(-100%);
+    transition: transform .3s;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-toggle { display: flex; }
+  .header-online { display: none; }
+  .auth-box { padding: 28px 20px; }
+}
+
+/* Scrollbar for modal */
+.modal::-webkit-scrollbar { width: 4px; }
+.modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Color input ── */
+input[type="color"] {
+  width: 36px; height: 36px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  background: none;
+  cursor: pointer;
+}
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch { border-radius: 5px; border: none; }
+
+/* ── Tab bar ── */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text2);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all .2s;
+}
+.tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ── Empty states ── */
+.empty-state {
+  text-align: center;
+  color: var(--text2);
+  padding: 30px 20px;
+  font-size: 0.9rem;
+}
+.empty-state .icon { font-size: 2rem; display: block; margin-bottom: 10px; }
+
+/* ── Textarea ── */
+textarea.form-input {
+  min-height: 70px;
+  resize: vertical;
+}
+
+/* ── Select ── */
+select.form-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300f5ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+select.form-input option { background: #0b0f1e; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+   AUTH SCREEN
+══════════════════════════════════════════ -->
+<div id="authScreen" class="screen active">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <span class="logo-icon">⚡</span>
+      <span class="logo-title">NEON CHAT</span>
+      <span class="logo-sub">Cyberpunk Messaging</span>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Đăng nhập</button>
+      <button class="auth-tab" onclick="switchTab('register')">Đăng ký</button>
+    </div>
+
+    <!-- Login form -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="loginUser" type="text" placeholder="Nhập username..." autocomplete="username" autocorrect="off" autocapitalize="none">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mật khẩu</label>
+        <input class="form-input" id="loginPass" type="password" placeholder="Nhập mật khẩu..." autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">
+        ⚡ Đăng nhập
+      </button>
+      <div class="auth-error" id="loginErr"></div>
+    </div>
+
+    <!-- Register form -->
+    <div id="registerForm" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="regUser" type="text" placeholder="3-16 ký tự, a-z 0-9 _" autocorrect="off" autocapitalize="none">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mật khẩu</label>
+        <input class="form-input" id="regPass" type="password" placeholder="Tối thiểu 4 ký tự">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Xác nhận mật khẩu</label>
+        <input class="form-input" id="regPass2" type="password" placeholder="Nhập lại mật khẩu">
+      </div>
+      <button class="btn btn-primary" id="regBtn" onclick="doRegister()">
+        🚀 Tạo tài khoản
+      </button>
+      <div class="auth-error" id="regErr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+   CHAT SCREEN
+══════════════════════════════════════════ -->
+<div id="chatScreen" class="screen">
+  <!-- Header -->
+  <div class="header">
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Users">👥</button>
+    <div class="header-logo">
+      <div class="logo-dot"></div>
+      NEON CHAT
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-online">
+      <div class="online-dot"></div>
+      <span id="onlineCount">0 online</span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="openProfile()" title="Profile">👤</button>
+      <button class="icon-btn" id="adminBtn" onclick="openAdmin()" title="Quản trị" style="display:none">⚙️</button>
+      <button class="icon-btn" onclick="doLogout()" title="Logout">🚪</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="main-layout">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        Người dùng <span class="count" id="userCount">0</span>
+      </div>
+      <div class="user-list" id="userList"></div>
+    </div>
+
+    <!-- Chat -->
+    <div class="chat-area">
+      <div class="messages-container" id="messages">
+        <div class="msg-system">⚡ Chào mừng đến Neon Chat!</div>
+      </div>
+      <div class="typing-bar" id="typingBar"></div>
+      <div class="input-area">
+        <div class="input-wrap">
+          <textarea id="msgInput" placeholder="Nhắn tin..." rows="1" maxlength="2000"></textarea>
+          <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+   PROFILE MODAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">👤 HỒ SƠ</span>
+      <button class="modal-close" onclick="closeModal('profileModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="profile-avatar-big" id="profileAvatarBig"></div>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchProfileTab('info')">Thông tin</button>
+        <button class="tab-btn" onclick="switchProfileTab('password')">Đổi mật khẩu</button>
+      </div>
+
+      <div id="profileTabInfo" class="tab-pane active">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input class="form-input" id="pUsername" disabled>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vai trò</label>
+          <input class="form-input" id="pRole" disabled>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bio (max 100 ký tự)</label>
+          <textarea class="form-input" id="pBio" maxlength="100" placeholder="Giới thiệu bản thân..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Màu tên</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+            <input type="color" id="pColor" value="#00f5ff">
+            <div class="color-picker-row" id="quickColors"></div>
+          </div>
+        </div>
+        <div class="form-group" id="badgeGroup">
+          <label class="form-label">Badge / Status (chỉ owner)</label>
+          <input class="form-input" id="pBadge" maxlength="20" placeholder="Ví dụ: 🎮 GAMER">
+        </div>
+        <button class="btn btn-primary" onclick="saveProfile()">💾 Lưu thay đổi</button>
+      </div>
+
+      <div id="profileTabPassword" class="tab-pane">
+        <div class="form-group">
+          <label class="form-label">Mật khẩu hiện tại</label>
+          <input class="form-input" id="pCurPass" type="password" placeholder="Nhập mật khẩu hiện tại">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mật khẩu mới</label>
+          <input class="form-input" id="pNewPass" type="password" placeholder="Tối thiểu 4 ký tự">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Xác nhận mật khẩu mới</label>
+          <input class="form-input" id="pNewPass2" type="password" placeholder="Nhập lại mật khẩu mới">
+        </div>
+        <button class="btn btn-primary" onclick="savePassword()">🔑 Đổi mật khẩu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+   ADMIN MODAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ QUẢN TRỊ</span>
+      <button class="modal-close" onclick="closeModal('adminModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchAdminTab('users')">Người dùng</button>
+        <button class="tab-btn" onclick="switchAdminTab('info')">Thông tin</button>
+      </div>
+
+      <div id="adminTabUsers" class="tab-pane active">
+        <div id="adminUserList"></div>
+      </div>
+
+      <div id="adminTabInfo" class="tab-pane">
+        <div style="padding:4px 0">
+          <div style="margin-bottom:12px;padding:12px;background:rgba(0,245,255,.06);border:1px solid var(--border);border-radius:10px;">
+            <div class="form-label" style="margin-bottom:6px;">👑 Owner</div>
+            <div style="font-size:0.9rem;">Toàn quyền: tạo admin, xóa tài khoản, ban, xem mọi thứ</div>
+          </div>
+          <div style="margin-bottom:12px;padding:12px;background:rgba(0,245,255,.06);border:1px solid var(--border);border-radius:10px;">
+            <div class="form-label" style="margin-bottom:6px;">🛡️ Admin</div>
+            <div style="font-size:0.9rem;">Ban/unban user, xóa tin nhắn, xem danh sách người dùng</div>
+          </div>
+          <div style="padding:12px;background:rgba(0,245,255,.06);border:1px solid var(--border);border-radius:10px;">
+            <div class="form-label" style="margin-bottom:6px;">👤 User</div>
+            <div style="font-size:0.9rem;">Nhắn tin, tùy chỉnh hồ sơ</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+   USER POPUP
+══════════════════════════════════════════ -->
+<div id="userPopup">
+  <div class="popup-avatar" id="popupAvatar"></div>
+  <div class="popup-name" id="popupName"></div>
+  <div class="popup-role" id="popupRole"></div>
+  <div class="popup-bio" id="popupBio"></div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ════════════════════════════════════════════
+//   NEON CHAT — CLIENT v1.0
+// ════════════════════════════════════════════
+
+let socket = null;
+let token = null;
+let me = null;
+let allUsers = [];
+let onlineIds = [];
+let typingTimer = null;
+
+const COLORS = ['#ff6b35','#00ff88','#ff007f','#00f5ff','#bf00ff','#ffcc00','#ff88cc','#44ffcc','#ff4444','#4488ff'];
+
+// ── Storage ──────────────────────────────────
+function saveSession(tok, user) {
+  try { localStorage.setItem('nc_token', tok); localStorage.setItem('nc_user', JSON.stringify(user)); } catch{}
+}
+function clearSession() {
+  try { localStorage.removeItem('nc_token'); localStorage.removeItem('nc_user'); } catch{}
+}
+function loadSession() {
+  try {
+    const t = localStorage.getItem('nc_token');
+    const u = localStorage.getItem('nc_user');
+    if (t && u) return { token: t, user: JSON.parse(u) };
+  } catch{}
+  return null;
+}
+
+// ── Toast ─────────────────────────────────────
+function toast(msg, type = 'info', dur = 3000) {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'toastOut .3s ease forwards';
+    setTimeout(() => el.remove(), 300);
+  }, dur);
+}
+
+// ── Utilities ─────────────────────────────────
+function initials(name) {
+  return name ? name[0].toUpperCase() : '?';
+}
+function fmtTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+}
+function roleName(role) {
+  return { owner: '👑 Owner', admin: '🛡️ Admin', user: '👤 User' }[role] || role;
+}
+function roleClass(role) {
+  return { owner: 'role-owner', admin: 'role-admin', user: 'role-user' }[role] || '';
+}
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function linkify(text) {
+  const esc = escHtml(text);
+  return esc.replace(/(https?:\/\/[^\s<>"]+)/gi, '<a href="$1" target="_blank" rel="noopener" style="color:var(--cyan)">$1</a>');
+}
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+function scrollToBottom() {
+  const el = document.getElementById('messages');
+  el.scrollTop = el.scrollHeight;
+}
+function isNearBottom() {
+  const el = document.getElementById('messages');
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+}
+
+// ── Auth tabs ─────────────────────────────────
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('loginForm').style.display = isLogin ? '' : 'none';
+  document.getElementById('registerForm').style.display = isLogin ? 'none' : '';
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === (isLogin ? 0 : 1));
+  });
+}
+
+// ── Login ────────────────────────────────────
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginErr');
+  const btn = document.getElementById('loginBtn');
+
+  errEl.classList.remove('show');
+  if (!username || !password) { showErr(errEl, 'Vui lòng nhập đầy đủ thông tin'); return; }
+
+  btn.innerHTML = '<span class="spinner"></span> Đang đăng nhập...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr(errEl, data.error || 'Lỗi đăng nhập'); return; }
+    loginSuccess(data.token, data.user);
+  } catch (e) {
+    showErr(errEl, 'Không thể kết nối server');
+  } finally {
+    btn.innerHTML = '⚡ Đăng nhập';
+    btn.disabled = false;
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('regUser').value.trim();
+  const password = document.getElementById('regPass').value;
+  const pass2 = document.getElementById('regPass2').value;
+  const errEl = document.getElementById('regErr');
+  const btn = document.getElementById('regBtn');
+
+  errEl.classList.remove('show');
+  if (!username || !password) { showErr(errEl, 'Vui lòng nhập đầy đủ'); return; }
+  if (password !== pass2) { showErr(errEl, 'Mật khẩu không khớp'); return; }
+
+  btn.innerHTML = '<span class="spinner"></span> Đang tạo...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr(errEl, data.error || 'Lỗi tạo tài khoản'); return; }
+    loginSuccess(data.token, data.user);
+    toast('Tài khoản đã được tạo!', 'success');
+  } catch (e) {
+    showErr(errEl, 'Không thể kết nối server');
+  } finally {
+    btn.innerHTML = '🚀 Tạo tài khoản';
+    btn.disabled = false;
+  }
+}
+
+function showErr(el, msg) {
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function loginSuccess(tok, user) {
+  token = tok;
+  me = user;
+  saveSession(tok, user);
+  showChat();
+  initSocket();
+  loadMessages();
+  if (['admin','owner'].includes(user.role)) {
+    document.getElementById('adminBtn').style.display = '';
+  }
+}
+
+function doLogout() {
+  if (socket) socket.disconnect();
+  clearSession();
+  token = null; me = null; allUsers = []; onlineIds = [];
+  document.getElementById('messages').innerHTML = '<div class="msg-system">⚡ Chào mừng đến Neon Chat!</div>';
+  document.getElementById('userList').innerHTML = '';
+  document.getElementById('adminBtn').style.display = 'none';
+  hideUserPopup();
+  showAuth();
+}
+
+// ── Screen switching ──────────────────────────
+function showAuth() {
+  document.getElementById('authScreen').classList.add('active');
+  document.getElementById('chatScreen').classList.remove('active');
+}
+function showChat() {
+  document.getElementById('authScreen').classList.remove('active');
+  document.getElementById('chatScreen').classList.add('active');
+}
+
+// ── Socket.io ─────────────────────────────────
+function initSocket() {
+  if (socket) socket.disconnect();
+  socket = io({ transports: ['websocket', 'polling'] });
+
+  socket.on('connect', () => {
+    socket.emit('authenticate', { token });
+  });
+
+  socket.on('authenticated', () => {});
+
+  socket.on('auth_failed', () => {
+    toast('Phiên đăng nhập hết hạn', 'error');
+    doLogout();
+  });
+
+  socket.on('force_logout', ({ reason }) => {
+    toast(reason || 'Bị đăng xuất', 'error');
+    doLogout();
+  });
+
+  socket.on('new_message', (msg) => {
+    const atBottom = isNearBottom();
+    appendMessage(msg);
+    if (atBottom) scrollToBottom();
+  });
+
+  socket.on('message_deleted', ({ messageId }) => {
+    const el = document.getElementById('msg-' + messageId);
+    if (el) el.remove();
+  });
+
+  socket.on('online_update', (ids) => {
+    onlineIds = ids;
+    document.getElementById('onlineCount').textContent = ids.length + ' online';
+    renderUserList();
+  });
+
+  socket.on('users_update', (users) => {
+    allUsers = users;
+    document.getElementById('userCount').textContent = users.length;
+    renderUserList();
+    // Update my info
+    const myUser = users.find(u => u.id === me.id);
+    if (myUser) me = { ...me, ...myUser };
+  });
+
+  socket.on('user_typing', ({ username, color }) => {
+    if (username === me.username) return;
+    const bar = document.getElementById('typingBar');
+    bar.innerHTML = `<span style="color:${escHtml(color)};font-weight:700">${escHtml(username)}</span>&nbsp;đang nhập&nbsp;<span class="typing-dots"><span></span><span></span><span></span></span>`;
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => { bar.innerHTML = ''; }, 2500);
+  });
+
+  socket.on('disconnect', () => {
+    document.getElementById('onlineCount').textContent = '0 online';
+  });
+
+  socket.on('reconnect', () => {
+    socket.emit('authenticate', { token });
+  });
+}
+
+// ── Messages ──────────────────────────────────
+async function loadMessages() {
+  try {
+    const res = await fetch('/api/messages', { headers: { 'x-token': token } });
+    if (!res.ok) return;
+    const msgs = await res.json();
+    const container = document.getElementById('messages');
+    container.innerHTML = '<div class="msg-system">⚡ Chào mừng đến Neon Chat!</div>';
+    msgs.forEach(m => appendMessage(m, false));
+    scrollToBottom();
+  } catch (e) {}
+}
+
+function appendMessage(msg, animate = true) {
+  const container = document.getElementById('messages');
+  const canDelete = me && ['admin', 'owner'].includes(me.role);
+  const color = msg.color || '#c8d8ff';
+  const badgeClass = { owner: 'badge-owner', admin: 'badge-admin' }[msg.role] || '';
+  const badgeLabel = msg.badge || (msg.role === 'owner' ? '⚡ OWNER' : msg.role === 'admin' ? '🛡️ ADMIN' : '');
+
+  const div = document.createElement('div');
+  div.className = 'msg' + (animate ? '' : '');
+  div.id = 'msg-' + msg.id;
+  div.style.animation = animate ? 'fadeIn .2s ease' : 'none';
+
+  div.innerHTML = `
+    <div class="msg-avatar" style="background:${escHtml(color)}22;color:${escHtml(color)};border:2px solid ${escHtml(color)}44">
+      ${escHtml(initials(msg.username))}
+    </div>
+    <div class="msg-body">
+      <div class="msg-header">
+        <span class="msg-username ${roleClass(msg.role)}" style="color:${escHtml(color)}"
+              onclick="showUserPopup(event,'${escHtml(msg.userId)}')">${escHtml(msg.username)}</span>
+        ${badgeLabel ? `<span class="msg-badge ${badgeClass}">${escHtml(badgeLabel)}</span>` : ''}
+        <span class="msg-time">${fmtTime(msg.timestamp)}</span>
+      </div>
+      <div class="msg-content">${linkify(msg.content)}</div>
+    </div>
+    ${canDelete ? `<button class="msg-delete" onclick="deleteMessage('${escHtml(msg.id)}')" title="Xóa">🗑</button>` : ''}
+  `;
+
+  container.appendChild(div);
+
+  // Remove old messages if too many
+  const msgs = container.querySelectorAll('.msg');
+  if (msgs.length > 150) msgs[0].remove();
+}
+
+// ── Send message ──────────────────────────────
+function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const content = input.value.trim();
+  if (!content || !socket) return;
+  socket.emit('send_message', { content, token });
+  input.value = '';
+  input.style.height = 'auto';
+  input.focus();
+}
+
+function deleteMessage(id) {
+  if (!socket) return;
+  socket.emit('delete_message', { messageId: id, token });
+}
+
+// ── Typing indicator ──────────────────────────
+let typingThrottle = false;
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('msgInput');
+  if (inp) {
+    inp.addEventListener('input', () => {
+      autoGrow(inp);
+      if (!typingThrottle && socket) {
+        socket.emit('typing', { token });
+        typingThrottle = true;
+        setTimeout(() => { typingThrottle = false; }, 1500);
+      }
+    });
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  }
+
+  // Close popup on click outside
+  document.addEventListener('click', (e) => {
+    const popup = document.getElementById('userPopup');
+    if (!popup.contains(e.target) && !e.target.closest('.msg-username') && !e.target.closest('.user-item')) {
+      hideUserPopup();
+    }
+  });
+
+  // Check existing session
+  const sess = loadSession();
+  if (sess) {
+    token = sess.token;
+    me = sess.user;
+    loginSuccess(sess.token, sess.user);
+  }
+
+  // Quick colors
+  const qc = document.getElementById('quickColors');
+  if (qc) {
+    COLORS.forEach(c => {
+      const dot = document.createElement('div');
+      dot.className = 'color-dot';
+      dot.style.background = c;
+      dot.style.color = c;
+      dot.title = c;
+      dot.onclick = () => {
+        document.getElementById('pColor').value = c;
+        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+        dot.classList.add('selected');
+        document.getElementById('profileAvatarBig').style.background = c + '33';
+        document.getElementById('profileAvatarBig').style.color = c;
+        document.getElementById('profileAvatarBig').style.borderColor = c + '88';
+      };
+      qc.appendChild(dot);
+    });
+  }
+});
+
+// ── User list ─────────────────────────────────
+function renderUserList() {
+  const container = document.getElementById('userList');
+  const sorted = [...allUsers].sort((a, b) => {
+    const rOrder = { owner: 0, admin: 1, user: 2 };
+    const aOn = onlineIds.includes(a.id);
+    const bOn = onlineIds.includes(b.id);
+    if (aOn !== bOn) return aOn ? -1 : 1;
+    return (rOrder[a.role] ?? 2) - (rOrder[b.role] ?? 2);
+  });
+
+  container.innerHTML = sorted.map(u => {
+    const online = onlineIds.includes(u.id);
+    const color = u.color || '#c8d8ff';
+    return `
+      <div class="user-item" onclick="showUserPopupById(event,'${escHtml(u.id)}')">
+        <div class="user-avatar ${u.role}" style="background:${escHtml(color)}22;color:${escHtml(color)}">
+          ${escHtml(initials(u.username))}
+          <div class="status-dot ${online ? 'online' : ''}"></div>
+        </div>
+        <div class="user-info-small">
+          <div class="user-name-small ${roleClass(u.role)}" style="color:${escHtml(color)}">${escHtml(u.username)}</div>
+          <div class="user-role-small">${roleName(u.role)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Sidebar toggle ────────────────────────────
+function toggleSidebar() {
+  const s = document.getElementById('sidebar');
+  s.classList.toggle('open');
+}
+
+// ── User Popup ────────────────────────────────
+function showUserPopup(event, userId) {
+  event.stopPropagation();
+  const user = allUsers.find(u => u.id === userId);
+  if (!user) return;
+  renderPopup(user, event.clientX, event.clientY);
+}
+function showUserPopupById(event, userId) {
+  event.stopPropagation();
+  const user = allUsers.find(u => u.id === userId);
+  if (!user) return;
+  renderPopup(user, event.clientX, event.clientY);
+}
+function renderPopup(user, x, y) {
+  const popup = document.getElementById('userPopup');
+  const color = user.color || '#c8d8ff';
+  const online = onlineIds.includes(user.id);
+  document.getElementById('popupAvatar').style.cssText = `background:${color}22;color:${color};border:2px solid ${color}88;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:900;margin:0 auto 10px`;
+  document.getElementById('popupAvatar').textContent = initials(user.username);
+  document.getElementById('popupName').style.color = color;
+  document.getElementById('popupName').textContent = user.username;
+  document.getElementById('popupRole').innerHTML = roleName(user.role) + (online ? ' &nbsp; 🟢 Online' : ' &nbsp; ⚫ Offline');
+  document.getElementById('popupBio').textContent = user.bio || '—';
+
+  popup.classList.add('show');
+
+  // Position popup
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let px = x + 10, py = y + 10;
+  if (px + 220 > vw) px = x - 230;
+  if (py + 180 > vh) py = y - 180;
+  popup.style.left = Math.max(8, px) + 'px';
+  popup.style.top = Math.max(8, py) + 'px';
+}
+function hideUserPopup() {
+  document.getElementById('userPopup').classList.remove('show');
+}
+
+// ── Modals ────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+    hideUserPopup();
+  }
+});
+
+// ── Profile modal ────────────────────────────
+function openProfile() {
+  if (!me) return;
+  const color = me.color || '#00f5ff';
+
+  document.getElementById('pUsername').value = me.username;
+  document.getElementById('pRole').value = roleName(me.role);
+  document.getElementById('pBio').value = me.bio || '';
+  document.getElementById('pColor').value = color;
+  document.getElementById('pBadge').value = me.badge || '';
+  document.getElementById('pCurPass').value = '';
+  document.getElementById('pNewPass').value = '';
+  document.getElementById('pNewPass2').value = '';
+
+  const big = document.getElementById('profileAvatarBig');
+  big.textContent = initials(me.username);
+  big.style.cssText = `width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;margin:0 auto 20px;background:${color}22;color:${color};border:3px solid ${color}66`;
+
+  document.getElementById('badgeGroup').style.display = me.role === 'owner' ? '' : 'none';
+
+  document.querySelectorAll('.color-dot').forEach(dot => {
+    dot.classList.toggle('selected', dot.title.toLowerCase() === color.toLowerCase());
+  });
+
+  document.getElementById('pColor').addEventListener('input', function() {
+    const c = this.value;
+    big.style.background = c + '22';
+    big.style.color = c;
+    big.style.borderColor = c + '66';
+  });
+
+  switchProfileTab('info');
+  openModal('profileModal');
+}
+
+function switchProfileTab(tab) {
+  document.querySelectorAll('#profileModal .tab-btn').forEach((b, i) =>
+    b.classList.toggle('active', (i === 0 && tab === 'info') || (i === 1 && tab === 'password'))
+  );
+  document.getElementById('profileTabInfo').classList.toggle('active', tab === 'info');
+  document.getElementById('profileTabPassword').classList.toggle('active', tab === 'password');
+}
+
+async function saveProfile() {
+  const color = document.getElementById('pColor').value;
+  const bio = document.getElementById('pBio').value;
+  const badge = document.getElementById('pBadge').value;
+  try {
+    const res = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-token': token },
+      body: JSON.stringify({ color, bio, badge })
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi lưu hồ sơ', 'error'); return; }
+    me = { ...me, ...data.user };
+    saveSession(token, me);
+    toast('Đã lưu hồ sơ!', 'success');
+    closeModal('profileModal');
+  } catch { toast('Lỗi kết nối', 'error'); }
+}
+
+async function savePassword() {
+  const currentPassword = document.getElementById('pCurPass').value;
+  const newPassword = document.getElementById('pNewPass').value;
+  const newPassword2 = document.getElementById('pNewPass2').value;
+  if (!currentPassword || !newPassword) { toast('Vui lòng nhập đầy đủ', 'error'); return; }
+  if (newPassword !== newPassword2) { toast('Mật khẩu mới không khớp', 'error'); return; }
+  try {
+    const res = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-token': token },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi đổi mật khẩu', 'error'); return; }
+    toast('Đã đổi mật khẩu!', 'success');
+    document.getElementById('pCurPass').value = '';
+    document.getElementById('pNewPass').value = '';
+    document.getElementById('pNewPass2').value = '';
+  } catch { toast('Lỗi kết nối', 'error'); }
+}
+
+// ── Admin modal ───────────────────────────────
+function openAdmin() {
+  if (!me || !['admin','owner'].includes(me.role)) return;
+  renderAdminUsers();
+  switchAdminTab('users');
+  openModal('adminModal');
+}
+
+function switchAdminTab(tab) {
+  document.querySelectorAll('#adminModal .tab-btn').forEach((b, i) =>
+    b.classList.toggle('active', (i === 0 && tab === 'users') || (i === 1 && tab === 'info'))
+  );
+  document.getElementById('adminTabUsers').classList.toggle('active', tab === 'users');
+  document.getElementById('adminTabInfo').classList.toggle('active', tab === 'info');
+}
+
+function renderAdminUsers() {
+  const list = document.getElementById('adminUserList');
+  const myRole = me?.role;
+  const renderUsers = [...allUsers].sort((a, b) => {
+    const rOrder = { owner: 0, admin: 1, user: 2 };
+    return (rOrder[a.role] ?? 2) - (rOrder[b.role] ?? 2);
+  });
+
+  if (!renderUsers.length) {
+    list.innerHTML = '<div class="empty-state"><span class="icon">👥</span>Không có người dùng</div>';
+    return;
+  }
+
+  list.innerHTML = renderUsers.map(u => {
+    const color = u.color || '#c8d8ff';
+    const isSelf = u.id === me.id;
+    const isOwner = u.role === 'owner';
+    const isAdmin = u.role === 'admin';
+    const canModify = !isSelf && !isOwner && !(myRole === 'admin' && isAdmin);
+
+    let actions = '';
+    if (canModify) {
+      if (u.banned) {
+        actions += `<button class="btn-sm btn-unban" onclick="updateUser('${u.id}', {banned:false})">✅ Unban</button>`;
+      } else {
+        actions += `<button class="btn-sm btn-ban" onclick="updateUser('${u.id}', {banned:true})">🚫 Ban</button>`;
+      }
+      if (myRole === 'owner') {
+        if (isAdmin) {
+          actions += `<button class="btn-sm btn-demote" onclick="updateUser('${u.id}', {role:'user'})">⬇️ Demote</button>`;
+        } else {
+          actions += `<button class="btn-sm btn-admin" onclick="updateUser('${u.id}', {role:'admin'})">⬆️ Admin</button>`;
+        }
+        actions += `<button class="btn-sm btn-delete" onclick="deleteUser('${u.id}','${escHtml(u.username)}')">🗑 Xóa</button>`;
+      }
+    }
+
+    return `
+      <div class="admin-user-card">
+        <div class="msg-avatar" style="width:38px;height:38px;flex-shrink:0;background:${escHtml(color)}22;color:${escHtml(color)};border:2px solid ${escHtml(color)}44;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">
+          ${escHtml(initials(u.username))}
+        </div>
+        <div class="admin-user-info">
+          <div class="admin-user-name">
+            <span class="${roleClass(u.role)}" style="color:${escHtml(color)}">${escHtml(u.username)}</span>
+            ${u.banned ? '<span class="badge-banned">BANNED</span>' : ''}
+            ${isSelf ? '<span style="font-size:0.7rem;color:var(--text2)">(Bạn)</span>' : ''}
+          </div>
+          <div class="admin-user-meta">${roleName(u.role)} • ${onlineIds.includes(u.id) ? '🟢 Online' : '⚫ Offline'}</div>
+        </div>
+        ${actions ? `<div class="admin-actions">${actions}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+async function updateUser(userId, updates) {
+  try {
+    const res = await fetch('/api/users/' + userId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-token': token },
+      body: JSON.stringify(updates)
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi cập nhật', 'error'); return; }
+    toast('Đã cập nhật!', 'success');
+    renderAdminUsers();
+  } catch { toast('Lỗi kết nối', 'error'); }
+}
+
+async function deleteUser(userId, username) {
+  if (!confirm(`Xóa tài khoản "${username}"?\nHành động này không thể hoàn tác!`)) return;
+  try {
+    const res = await fetch('/api/users/' + userId, {
+      method: 'DELETE',
+      headers: { 'x-token': token }
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi xóa', 'error'); return; }
+    toast(`Đã xóa "${username}"`, 'success');
+    renderAdminUsers();
+  } catch { toast('Lỗi kết nối', 'error'); }
+}
+
+// ── Enter key in login ─────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  ['loginUser','loginPass'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  });
+  ['regUser','regPass','regPass2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
+  });
+});
+
+function setMobileHeight() {
+    document.documentElement.style.setProperty(
+        '--app-height',
+        `${window.innerHeight}px`
+    );
+}
+
+window.addEventListener('resize', setMobileHeight);
+setMobileHeight();
+</script>
+</body>
+</html>
