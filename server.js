@@ -273,6 +273,25 @@ app.put('/api/profile', requireAuth, (req, res) => {
   res.json({ user: publicUser(users[idx]) });
 });
 
+// Temp: xóa hết data giữ lại owner/admin
+app.get('/api/clear-data', async (req, res) => {
+  if (!dbReady) return res.json({ error: 'MySQL not ready' });
+  try {
+    // Xóa hết tin nhắn
+    await pool.execute('DELETE FROM messages');
+    messages = [];
+
+    // Xóa hết user trừ owner và admin
+    await pool.execute("DELETE FROM users WHERE id NOT IN ('owner-001', 'admin-001')");
+    users = users.filter(u => ['owner-001', 'admin-001'].includes(u.id));
+
+    broadcastUsers();
+    res.json({ ok: true, users: users.map(u => u.username) });
+  } catch(e) {
+    res.json({ error: e.message });
+  }
+});
+
 // Update avatar
 app.put('/api/avatar', requireAuth, async (req, res) => {
   const { avatar } = req.body || {};
