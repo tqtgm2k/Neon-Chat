@@ -1042,19 +1042,27 @@ select.form-input option { background: #0b0f1e; }
 .group-header-meta { font-size: 0.75rem; color: var(--text2); }
 
 /* ── Group Members Modal ── */
-.members-list { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; padding-right: 4px; }
-.member-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
-.member-row:hover { background: rgba(0,245,255,0.06); }
-.member-avatar-sm { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 700; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.15); }
+.members-list { display: flex; flex-direction: column; gap: 6px; max-height: 380px; overflow-y: auto; padding-right: 4px; }
+.member-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,.2); border: 1px solid var(--border); transition: all .15s; }
+.member-row:hover { background: rgba(0,245,255,.06); border-color: rgba(0,245,255,.2); }
+.member-avatar-sm { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; flex-shrink: 0; overflow: hidden; }
 .member-name-wrap { flex: 1; min-width: 0; }
-.member-uname { font-weight: 700; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.member-role-tag { font-size: 0.7rem; color: var(--text2); margin-top: 1px; }
-.member-status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.member-status-dot.online { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
-.member-status-dot.offline { background: #555; }
-.group-action-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); color: var(--text); border-radius: 6px; padding: 3px 10px; font-size: 0.78rem; cursor: pointer; font-family: 'Rajdhani', sans-serif; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
-.group-action-btn:hover { background: rgba(0,245,255,0.15); border-color: var(--cyan); color: var(--cyan); }
-.group-action-btn.danger:hover { background: rgba(255,50,50,0.15); border-color: #ff4444; color: #ff4444; }
+.member-uname { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-role-tag { font-size: 0.72rem; color: var(--text2); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+.member-status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+.member-status-dot.online { background: #00ff88; box-shadow: 0 0 5px #00ff88; }
+.member-status-dot.offline { background: #444; }
+
+/* Group header buttons */
+.group-header-wrap { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.group-header-btns { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.ghb { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: var(--text); cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all .2s; flex-shrink: 0; }
+.ghb:hover { background: rgba(0,245,255,.12); border-color: var(--cyan); color: var(--cyan); }
+.ghb.danger:hover { background: rgba(255,50,50,.12); border-color: #ff4444; color: #ff4444; }
+.ghb.back { color: var(--text2); }
+
+/* Members modal add user section */
+.add-member-wrap { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
 
 </style>
 </head>
@@ -2447,41 +2455,51 @@ async function openGroupMembers(groupId) {
   const isGroupAdmin = myMembership && myMembership.role === 'admin';
 
   const list = document.getElementById('membersList');
-  list.innerHTML = group.members.map(m => {
+  // Sắp xếp admin lên trên
+  const sorted = [...group.members].sort((a,b) => a.role === 'admin' ? -1 : 1);
+  list.innerHTML = sorted.map(m => {
     const u = allUsers.find(u => u.id === m.userId) || {};
     const isOnline = onlineIds.includes(m.userId);
     const displayName = u.username || m.userId;
     const color = u.color || '#00f5ff';
-    const initial = displayName.charAt(0).toUpperCase();
-    const roleLabel = m.role === 'admin' ? '⭐ Admin group' : '👤 Thành viên';
-    const userRoleBadge = u.role === 'owner' ? ' 👑' : u.role === 'admin' ? ' 🛡️' : '';
+    const isSelf = m.userId === (window.me && window.me.id);
+    const roleLabel = m.role === 'admin' ? '⭐ Admin' : '👤 Thành viên';
+    const sysRole = u.role === 'owner' ? '👑' : u.role === 'admin' ? '🛡️' : '';
     const avatarHtml = u.avatar
-      ? `<img src="${u.avatar}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;">`
-      : `<div class="member-avatar-sm" style="background:${color}22;color:${color};">${initial}</div>`;
+      ? `<img src="${u.avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`
+      : `<div style="width:36px;height:36px;border-radius:50%;background:${color}22;color:${color};border:2px solid ${color}44;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;">${displayName.charAt(0).toUpperCase()}</div>`;
 
-    let kickBtn = '';
-    if (isGroupAdmin && m.userId !== (window.me && window.me.id)) {
-      kickBtn = `<button class="group-action-btn danger" style="padding:2px 8px;font-size:0.72rem;"
-        onclick="kickGroupMember('${groupId}','${m.userId}','${escHtml(displayName)}')">Kick</button>`;
-    }
+    const kickBtn = isGroupAdmin && !isSelf
+      ? `<button onclick="kickGroupMember('${groupId}','${m.userId}','${escHtml(displayName)}')"
+          style="background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:6px;padding:4px 10px;font-size:0.75rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:600;">Kick</button>`
+      : '';
 
     return `
       <div class="member-row">
-        ${avatarHtml}
-        <div class="member-name-wrap">
-          <div class="member-uname" style="color:${color};">${escHtml(displayName)}${userRoleBadge}</div>
-          <div class="member-role-tag">${roleLabel}${isOnline ? ' • <span style="color:#00ff88;">online</span>' : ''}</div>
+        <div style="position:relative;flex-shrink:0;">
+          ${avatarHtml}
+          <span class="member-status-dot ${isOnline ? 'online' : 'offline'}" style="position:absolute;bottom:1px;right:1px;"></span>
         </div>
-        <div class="member-status-dot ${isOnline ? 'online' : 'offline'}"></div>
+        <div class="member-name-wrap">
+          <div class="member-uname" style="color:${color};">${escHtml(displayName)} ${sysRole} ${isSelf ? '<span style="color:var(--text2);font-size:0.72rem;">(Bạn)</span>' : ''}</div>
+          <div class="member-role-tag">${roleLabel} ${isOnline ? '• <span style="color:#00ff88;">Online</span>' : '• Offline'}</div>
+        </div>
         ${kickBtn}
       </div>`;
   }).join('');
 
-  // Nút hành động phía dưới modal
+  // Nút hành động
   const actions = document.getElementById('groupMembersActions');
-  actions.innerHTML = isGroupAdmin
-    ? `<button class="btn btn-primary" style="font-size:0.82rem;padding:6px 14px;" onclick="closeModal('groupMembersModal');openAddMemberModal('${groupId}')">➕ Thêm thành viên</button>`
-    : `<button class="group-action-btn danger" onclick="leaveGroup('${groupId}')">🚪 Rời group</button>`;
+  if (isGroupAdmin) {
+    actions.innerHTML = `
+      <button class="btn btn-primary" style="flex:1;font-size:0.85rem;" onclick="closeModal('groupMembersModal');openAddMemberModal('${groupId}')">➕ Thêm thành viên</button>
+      <button onclick="confirmDeleteGroup('${groupId}','${group.name.replace(/'/g,"\'")}');closeModal('groupMembersModal');"
+        style="background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:8px;padding:8px 14px;font-size:0.85rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">🗑 Xóa group</button>`;
+  } else {
+    actions.innerHTML = `
+      <button onclick="leaveGroup('${groupId}')"
+        style="flex:1;background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:8px;padding:8px 14px;font-size:0.85rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">🚪 Rời group</button>`;
+  }
 
   openModal('groupMembersModal');
 }
