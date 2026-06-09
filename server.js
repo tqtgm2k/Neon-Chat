@@ -438,6 +438,7 @@ io.on('connection', (socket) => {
     const user = users.find(u => u.id === payload.userId);
     if (!user || !['admin', 'owner'].includes(user.role)) return;
     const idx = messages.findIndex(m => m.id === messageId);
+    console.log('delete_message:', messageId, 'found:', idx !== -1);
     if (idx !== -1) {
       messages.splice(idx, 1);
       if (dbReady) {

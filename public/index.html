@@ -1451,6 +1451,11 @@ function initSocket() {
     // Update my info
     const myUser = users.find(u => u.id === me.id);
     if (myUser) me = { ...me, ...myUser };
+    // Cập nhật admin panel nếu đang mở
+    const adminModal = document.getElementById('adminModal');
+    if (adminModal && adminModal.classList.contains('show')) {
+      renderAdminUsers();
+    }
   });
 
   socket.on('user_typing', ({ username, color }) => {
@@ -1562,25 +1567,7 @@ function sendImage(input) {
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       const compressed = canvas.toDataURL('image/jpeg', 0.75);
 
-      // Hiện preview ngay lập tức không chờ server
-      const tempMsg = {
-        id: 'temp-' + Date.now(),
-        userId: me.id,
-        username: me.username,
-        color: me.color,
-        role: me.role,
-        badge: me.badge || '',
-        type: 'image',
-        content: '',
-        imageData: compressed,
-        avatar: me.avatar || null,
-        timestamp: new Date().toISOString()
-      };
-      appendMessage(tempMsg, true);
-      scrollToBottom();
-
-      const tempId = tempMsg.id;
-      socket.emit('send_message', { token, type: 'image', imageData: compressed, content: '', tempId });
+      socket.emit('send_message', { token, type: 'image', imageData: compressed, content: '' });
       input.value = '';
     };
     img.src = e.target.result;
