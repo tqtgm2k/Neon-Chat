@@ -242,18 +242,18 @@ app.get('/api/users', requireAuth, (req, res) => {
 app.put('/api/profile', requireAuth, (req, res) => {
   const { color, bio, badge, newPassword, currentPassword, newUsername } = req.body || {};
 
+  const idx = users.findIndex(u => u.id === req.user.id);
+  if (idx === -1) return res.status(404).json({ error: 'User not found' });
+
   // Đổi username
   if (newUsername) {
     const uname = newUsername.trim();
     if (uname.length < 2 || uname.length > 32)
       return res.status(400).json({ error: 'Tên: 2-32 ký tự' });
-    // Cập nhật username trong lịch sử tin nhắn
     messages.forEach(m => { if (m.userId === req.user.id) m.username = uname; });
     saveMessages();
     users[idx].username = uname;
   }
-  const idx = users.findIndex(u => u.id === req.user.id);
-  if (idx === -1) return res.status(404).json({ error: 'User not found' });
 
   if (color && /^#[0-9a-fA-F]{6}$/.test(color)) users[idx].color = color;
   if (bio !== undefined) users[idx].bio = String(bio).slice(0, 100);
