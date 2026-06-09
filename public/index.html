@@ -1840,6 +1840,7 @@ async function loadMyGroups() {
       const savedGroupId = sessionStorage.getItem('currentGroupId');
       if (savedGroupId && myGroups.find(g => g.id === savedGroupId)) {
         switchSidebarTab('groups');
+        document.getElementById('messages').innerHTML = '';
         openGroupChat(savedGroupId);
       }
     }
@@ -1854,7 +1855,7 @@ async function openGroupChat(groupId) {
   if (!group) return;
 
   // Cập nhật header
-  const myMembership = group.members.find(m => m.userId === me?.id);
+  const myMembership = group.members.find(m => m.userId === (window.me && window.me.id));
   const isGroupAdmin = myMembership && myMembership.role === 'admin';
   const headerLogo = document.querySelector('.header-logo');
   headerLogo.innerHTML = `
@@ -2439,17 +2440,17 @@ async function openGroupMembers(groupId) {
 
   document.getElementById('groupMembersTitle').textContent = '👥 ' + group.name.toUpperCase();
   const count = group.members.length;
-  const onlineCount = group.members.filter(m => onlineUsers.includes(m.userId)).length;
+  const onlineCount = group.members.filter(m => onlineIds.includes(m.userId)).length;
   document.getElementById('groupMembersCount').textContent =
     `${count} thành viên • ${onlineCount} đang online`;
 
-  const myMembership = group.members.find(m => m.userId === me?.id);
+  const myMembership = group.members.find(m => m.userId === (window.me && window.me.id));
   const isGroupAdmin = myMembership && myMembership.role === 'admin';
 
   const list = document.getElementById('membersList');
   list.innerHTML = group.members.map(m => {
     const u = allUsers.find(u => u.id === m.userId) || {};
-    const isOnline = onlineUsers.includes(m.userId);
+    const isOnline = onlineIds.includes(m.userId);
     const displayName = u.username || m.userId;
     const color = u.color || '#00f5ff';
     const initial = displayName.charAt(0).toUpperCase();
@@ -2460,7 +2461,7 @@ async function openGroupMembers(groupId) {
       : `<div class="member-avatar-sm" style="background:${color}22;color:${color};">${initial}</div>`;
 
     let kickBtn = '';
-    if (isGroupAdmin && m.userId !== me?.id) {
+    if (isGroupAdmin && m.userId !== (window.me && window.me.id)) {
       kickBtn = `<button class="group-action-btn danger" style="padding:2px 8px;font-size:0.72rem;"
         onclick="kickGroupMember('${groupId}','${m.userId}','${escHtml(displayName)}')">Kick</button>`;
     }
@@ -2512,7 +2513,7 @@ async function leaveGroup(groupId) {
   if (!group) return;
   if (!confirm(`Rời khỏi group "${group.name}"?`)) return;
   try {
-    const res = await fetch(`/api/groups/${groupId}/members/${me.id}`, {
+    const res = await fetch(`/api/groups/${groupId}/members/${window.me && window.me.id}`, {
       method: 'DELETE', headers: { 'x-token': token }
     });
     if (!res.ok) { const d = await res.json(); toast(d.error || 'Lỗi', 'error'); return; }
