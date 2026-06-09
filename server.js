@@ -17,7 +17,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
-  pingTimeout: 60000
+  pingTimeout: 60000,
+  maxHttpBufferSize: 4 * 1024 * 1024
 });
 
 const PORT = process.env.PORT || 3000;
@@ -344,7 +345,7 @@ io.on('connection', (socket) => {
 
     if (msgType === 'image') {
       if (!imageData || !imageData.startsWith('data:image/')) return;
-      if (imageData.length > 5 * 1024 * 1024) return; // giới hạn 5MB
+      if (imageData.length > 3 * 1024 * 1024) return; // giới hạn 3MB
       const msg = {
         id: Date.now().toString() + Math.random().toString(36).slice(2,6),
         userId: user.id,

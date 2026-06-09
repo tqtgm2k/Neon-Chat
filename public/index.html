@@ -1506,15 +1506,30 @@ function deleteMessage(id) {
 function sendImage(input) {
   const file = input.files[0];
   if (!file || !socket) return;
-  if (file.size > 5 * 1024 * 1024) {
-    toast('Ảnh tối đa 5MB!', 'error', 2000);
+  if (file.size > 10 * 1024 * 1024) {
+    toast('Ảnh tối đa 10MB!', 'error', 2000);
     input.value = '';
     return;
   }
   const reader = new FileReader();
   reader.onload = (e) => {
-    socket.emit('send_message', { token, type: 'image', imageData: e.target.result, content: '' });
-    input.value = '';
+    // Nén ảnh trước khi gửi
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      const MAX = 1280;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.75);
+      socket.emit('send_message', { token, type: 'image', imageData: compressed, content: '' });
+      input.value = '';
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
