@@ -1040,6 +1040,22 @@ select.form-input option { background: #0b0f1e; }
 .group-header-info { display: flex; flex-direction: column; }
 .group-header-name { font-size: 1rem; font-weight: 700; color: var(--cyan); }
 .group-header-meta { font-size: 0.75rem; color: var(--text2); }
+
+/* ── Group Members Modal ── */
+.members-list { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; padding-right: 4px; }
+.member-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+.member-row:hover { background: rgba(0,245,255,0.06); }
+.member-avatar-sm { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 700; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.15); }
+.member-name-wrap { flex: 1; min-width: 0; }
+.member-uname { font-weight: 700; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-role-tag { font-size: 0.7rem; color: var(--text2); margin-top: 1px; }
+.member-status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.member-status-dot.online { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
+.member-status-dot.offline { background: #555; }
+.group-action-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); color: var(--text); border-radius: 6px; padding: 3px 10px; font-size: 0.78rem; cursor: pointer; font-family: 'Rajdhani', sans-serif; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
+.group-action-btn:hover { background: rgba(0,245,255,0.15); border-color: var(--cyan); color: var(--cyan); }
+.group-action-btn.danger:hover { background: rgba(255,50,50,0.15); border-color: #ff4444; color: #ff4444; }
+
 </style>
 </head>
 <body>
@@ -1838,6 +1854,8 @@ async function openGroupChat(groupId) {
   if (!group) return;
 
   // Cập nhật header
+  const me = group.members.find(m => m.userId === myUser?.id);
+  const isGroupAdmin = me && me.role === 'admin';
   const headerLogo = document.querySelector('.header-logo');
   headerLogo.innerHTML = `
     <div class="logo-dot"></div>
@@ -1845,7 +1863,11 @@ async function openGroupChat(groupId) {
       <div class="group-header-name">${group.avatar} ${escHtml(group.name)}</div>
       <div class="group-header-meta">${group.members.length} thành viên</div>
     </div>
-    <button onclick="backToMain()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:0.8rem;margin-left:8px;">✕</button>`;
+    <div style="display:flex;gap:6px;margin-left:8px;align-items:center;">
+      <button class="group-action-btn" onclick="openGroupMembers('${group.id}')">👥 Members</button>
+      ${isGroupAdmin ? `<button class="group-action-btn danger" onclick="confirmDeleteGroup('${group.id}','${group.name.replace(/'/g,'\\&apos;')}')">🗑️ Xóa</button>` : ''}
+    </div>
+    <button onclick="backToMain()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:0.8rem;margin-left:4px;">✕</button>`;
 
   // Load tin nhắn group
   const container = document.getElementById('messages');
@@ -2409,10 +2431,145 @@ function setMobileHeight() {
 
 window.addEventListener('resize', setMobileHeight);
 setMobileHeight();
+
+// ── HIỂN THỊ THÀNH VIÊN GROUP ──────────────────────────────────────────────
+async function openGroupMembers(groupId) {
+  const group = myGroups.find(g => g.id === groupId);
+  if (!group) return;
+
+  document.getElementById('groupMembersTitle').textContent = '👥 ' + group.name.toUpperCase();
+  const count = group.members.length;
+  const onlineCount = group.members.filter(m => onlineUsers.includes(m.userId)).length;
+  document.getElementById('groupMembersCount').textContent =
+    `${count} thành viên • ${onlineCount} đang online`;
+
+  const me = group.members.find(m => m.userId === myUser?.id);
+  const isGroupAdmin = me && me.role === 'admin';
+
+  const list = document.getElementById('membersList');
+  list.innerHTML = group.members.map(m => {
+    const u = allUsers.find(u => u.id === m.userId) || {};
+    const isOnline = onlineUsers.includes(m.userId);
+    const displayName = u.username || m.userId;
+    const color = u.color || '#00f5ff';
+    const initial = displayName.charAt(0).toUpperCase();
+    const roleLabel = m.role === 'admin' ? '⭐ Admin group' : '👤 Thành viên';
+    const userRoleBadge = u.role === 'owner' ? ' 👑' : u.role === 'admin' ? ' 🛡️' : '';
+    const avatarHtml = u.avatar
+      ? `<img src="${u.avatar}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;">`
+      : `<div class="member-avatar-sm" style="background:${color}22;color:${color};">${initial}</div>`;
+
+    let kickBtn = '';
+    if (isGroupAdmin && m.userId !== myUser?.id) {
+      kickBtn = `<button class="group-action-btn danger" style="padding:2px 8px;font-size:0.72rem;"
+        onclick="kickGroupMember('${groupId}','${m.userId}','${escHtml(displayName)}')">Kick</button>`;
+    }
+
+    return `
+      <div class="member-row">
+        ${avatarHtml}
+        <div class="member-name-wrap">
+          <div class="member-uname" style="color:${color};">${escHtml(displayName)}${userRoleBadge}</div>
+          <div class="member-role-tag">${roleLabel}${isOnline ? ' • <span style="color:#00ff88;">online</span>' : ''}</div>
+        </div>
+        <div class="member-status-dot ${isOnline ? 'online' : 'offline'}"></div>
+        ${kickBtn}
+      </div>`;
+  }).join('');
+
+  // Nút hành động phía dưới modal
+  const actions = document.getElementById('groupMembersActions');
+  actions.innerHTML = isGroupAdmin
+    ? `<button class="btn btn-primary" style="font-size:0.82rem;padding:6px 14px;" onclick="closeModal('groupMembersModal');openAddMemberModal('${groupId}')">➕ Thêm thành viên</button>`
+    : `<button class="group-action-btn danger" onclick="leaveGroup('${groupId}')">🚪 Rời group</button>`;
+
+  openModal('groupMembersModal');
+}
+
+// ── KICK THÀNH VIÊN ────────────────────────────────────────────────────────
+async function kickGroupMember(groupId, userId, username) {
+  if (!confirm(`Kick ${username} khỏi group?`)) return;
+  try {
+    const res = await fetch(`/api/groups/${groupId}/members/${userId}`, {
+      method: 'DELETE', headers: { 'x-token': token }
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi kick thành viên', 'error'); return; }
+    toast(`Đã kick ${username}!`, 'success');
+    closeModal('groupMembersModal');
+    // Cập nhật local group và mở lại modal
+    const group = myGroups.find(g => g.id === groupId);
+    if (group) {
+      group.members = group.members.filter(m => m.userId !== userId);
+      openGroupMembers(groupId);
+    }
+  } catch(e) { toast('Lỗi mạng', 'error'); }
+}
+
+// ── RỜI GROUP ─────────────────────────────────────────────────────────────
+async function leaveGroup(groupId) {
+  const group = myGroups.find(g => g.id === groupId);
+  if (!group) return;
+  if (!confirm(`Rời khỏi group "${group.name}"?`)) return;
+  try {
+    const res = await fetch(`/api/groups/${groupId}/members/${myUser.id}`, {
+      method: 'DELETE', headers: { 'x-token': token }
+    });
+    if (!res.ok) { const d = await res.json(); toast(d.error || 'Lỗi', 'error'); return; }
+    closeModal('groupMembersModal');
+    toast(`Đã rời group "${group.name}"`, 'success');
+  } catch(e) { toast('Lỗi mạng', 'error'); }
+}
+
+// ── XÁC NHẬN XÓA GROUP ────────────────────────────────────────────────────
+function confirmDeleteGroup(groupId, groupName) {
+  if (!confirm(`Xóa group "${groupName}"?\nToàn bộ tin nhắn sẽ bị xóa vĩnh viễn!`)) return;
+  deleteGroup(groupId);
+}
+
+async function deleteGroup(groupId) {
+  try {
+    const res = await fetch(`/api/groups/${groupId}`, {
+      method: 'DELETE', headers: { 'x-token': token }
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi xóa group', 'error'); return; }
+    toast('Đã xóa group!', 'success');
+    backToMain();
+  } catch(e) { toast('Lỗi mạng', 'error'); }
+}
+
+// ── MỞ MODAL THÊM THÀNH VIÊN ──────────────────────────────────────────────
+function openAddMemberModal(groupId) {
+  const group = myGroups.find(g => g.id === groupId);
+  if (!group) return;
+  // Reuse groupMemberPicker từ createGroup modal nhưng dùng riêng
+  // Đơn giản: mở modal tạo group ở chế độ thêm thành viên
+  _addMemberGroupId = groupId;
+  document.getElementById('groupMemberSearch').value = '';
+  _selectedMembers = group.members.map(m => m.userId);
+  renderGroupMemberPicker();
+  openModal('addMemberModal');
+}
+
 </script>
 
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <img id="lightboxImg" src="">
+</div>
+
+
+<!-- GROUP MEMBERS MODAL -->
+<div class="modal-overlay" id="groupMembersModal">
+  <div class="modal" style="max-width:420px;width:95%;">
+    <div class="modal-header">
+      <span class="modal-title" id="groupMembersTitle">👥 THÀNH VIÊN</span>
+      <button class="modal-close" onclick="closeModal('groupMembersModal')">✕</button>
+    </div>
+    <div style="margin-bottom:10px;font-size:0.8rem;color:var(--text2);" id="groupMembersCount"></div>
+    <div class="members-list" id="membersList"></div>
+    <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;" id="groupMembersActions"></div>
+  </div>
 </div>
 
 </body>
