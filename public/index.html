@@ -1847,15 +1847,20 @@ async function loadMyGroups() {
     if (res.ok) {
       myGroups = await res.json();
       renderGroupList();
-      // Restore trạng thái group trước khi reload
       const savedGroupId = sessionStorage.getItem('currentGroupId');
       if (savedGroupId && myGroups.find(g => g.id === savedGroupId)) {
         switchSidebarTab('groups');
-        document.getElementById('messages').innerHTML = '';
-        openGroupChat(savedGroupId);
+        await openGroupChat(savedGroupId);
+      } else {
+        sessionStorage.removeItem('currentGroupId');
+        await loadMessages();
       }
+    } else {
+      await loadMessages();
     }
-  } catch(e) {}
+  } catch(e) {
+    await loadMessages();
+  }
 }
 
 async function openGroupChat(groupId) {
