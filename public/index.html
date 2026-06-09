@@ -731,6 +731,14 @@ body::after {
   flex: 1;
   text-align: center;
 }
+.btn-sm.btn-ban { background: rgba(255,0,127,.1); color: var(--pink); border-color: rgba(255,0,127,.4); }
+.btn-sm.btn-ban:hover { background: rgba(255,0,127,.25); }
+.btn-sm.btn-unban { background: rgba(0,255,136,.1); color: #00ff88; border-color: rgba(0,255,136,.4); }
+.btn-sm.btn-demote { background: rgba(136,170,255,.1); color: #88aaff; border-color: rgba(136,170,255,.4); }
+.btn-sm.btn-admin { background: rgba(0,245,255,.1); color: var(--cyan); border-color: rgba(0,245,255,.4); }
+.btn-sm.btn-delete { background: rgba(255,0,127,.1); color: var(--pink); border-color: rgba(255,0,127,.4); }
+.btn-sm.btn-reset { background: rgba(255,170,0,.1); color: #ffaa00; border-color: rgba(255,170,0,.4); }
+.btn-sm.btn-reset:hover { background: rgba(255,170,0,.25); }
 .btn-ban  { color: var(--pink); border-color: rgba(255,0,127,.4); }
 .btn-ban:hover { background: rgba(255,0,127,.15); }
 .btn-unban { color: var(--green); border-color: rgba(0,255,136,.4); }
@@ -1166,6 +1174,9 @@ select.form-input option { background: #0b0f1e; }
       </div>
 
       <div id="adminTabUsers" class="tab-pane active">
+        <div style="margin-bottom:12px;">
+          <input class="form-input" id="adminSearch" placeholder="🔍 Tìm kiếm tên người dùng..." oninput="renderAdminUsers()" style="width:100%;box-sizing:border-box;">
+        </div>
         <div id="adminUserList"></div>
       </div>
 
@@ -1903,10 +1914,14 @@ function switchAdminTab(tab) {
 function renderAdminUsers() {
   const list = document.getElementById('adminUserList');
   const myRole = me?.role;
-  const renderUsers = [...allUsers].sort((a, b) => {
-    const rOrder = { owner: 0, admin: 1, user: 2 };
-    return (rOrder[a.role] ?? 2) - (rOrder[b.role] ?? 2);
-  });
+  const searchEl = document.getElementById('adminSearch');
+  const keyword = searchEl ? searchEl.value.toLowerCase().trim() : '';
+  const renderUsers = [...allUsers]
+    .filter(u => !keyword || u.username.toLowerCase().includes(keyword) || (u.email||'').toLowerCase().includes(keyword))
+    .sort((a, b) => {
+      const rOrder = { owner: 0, admin: 1, user: 2 };
+      return (rOrder[a.role] ?? 2) - (rOrder[b.role] ?? 2);
+    });
 
   if (!renderUsers.length) {
     list.innerHTML = '<div class="empty-state"><span class="icon">👥</span>Không có người dùng</div>';
