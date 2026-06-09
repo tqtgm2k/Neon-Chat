@@ -29,7 +29,11 @@ async function initDB() {
   // Thêm cột email nếu chưa có (migration)
   try {
     await conn.execute('ALTER TABLE users ADD COLUMN email VARCHAR(255) UNIQUE AFTER id');
-  } catch(e) {} // Bỏ qua nếu đã có
+  } catch(e) {}
+  // Thêm cột avatar nếu chưa có
+  try {
+    await conn.execute('ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT AFTER badge');
+  } catch(e) {}
   await conn.execute(`
     CREATE TABLE IF NOT EXISTS messages (
       id VARCHAR(64) PRIMARY KEY,

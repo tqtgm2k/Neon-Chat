@@ -100,13 +100,13 @@ async function saveUsers() {
   if (!dbReady) { try { fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2)); } catch(e){} return; }
   for (const u of users) {
     await pool.execute(`
-      INSERT INTO users (id, email, username, password, color, bio, role, badge, banned)
-      VALUES (?,?,?,?,?,?,?,?,?)
+      INSERT INTO users (id, email, username, password, color, bio, role, badge, avatar, banned)
+      VALUES (?,?,?,?,?,?,?,?,?,?)
       ON DUPLICATE KEY UPDATE
         email=VALUES(email), username=VALUES(username), password=VALUES(password),
         color=VALUES(color), bio=VALUES(bio), role=VALUES(role),
-        badge=VALUES(badge), banned=VALUES(banned)
-    `, [u.id, u.email||null, u.username, u.password, u.color||'#00f5ff', u.bio||'', u.role||'user', u.badge||'', u.banned?1:0]);
+        badge=VALUES(badge), avatar=VALUES(avatar), banned=VALUES(banned)
+    `, [u.id, u.email||null, u.username, u.password, u.color||'#00f5ff', u.bio||'', u.role||'user', u.badge||'', u.avatar||null, u.banned?1:0]);
   }
 }
 
@@ -126,6 +126,7 @@ function publicUser(u) {
   return {
     id: u.id,
     username: u.username,
+    avatar: u.avatar || null,
     role: u.role,
     color: u.color,
     bio: u.bio || '',
@@ -274,6 +275,19 @@ app.put('/api/profile', requireAuth, (req, res) => {
   res.json({ user: publicUser(users[idx]) });
 });
 
+// Update avatar
+app.put('/api/avatar', requireAuth, async (req, res) => {
+  const { avatar } = req.body || {};
+  if (!avatar || !avatar.startsWith('data:image/')) return res.status(400).json({ error: 'Invalid image' });
+  if (avatar.length > 2 * 1024 * 1024) return res.status(400).json({ error: 'Ảnh tối đa 2MB' });
+  const idx = users.findIndex(u => u.id === req.user.id);
+  if (idx === -1) return res.status(404).json({ error: 'User not found' });
+  users[idx].avatar = avatar;
+  await saveUsers();
+  broadcastUsers();
+  res.json({ user: publicUser(users[idx]) });
+});
+
 // Admin/Owner: update user role or ban
 app.put('/api/users/:id', requireAuth, (req, res) => {
   const { role, banned } = req.body || {};
@@ -391,6 +405,7 @@ io.on('connection', (socket) => {
       badge: user.badge || '',
       type: 'text',
       content: text,
+      avatar: user.avatar || null,
       timestamp: new Date().toISOString()
     };
     messages.push(msg);

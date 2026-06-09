@@ -660,6 +660,11 @@ body::after {
 .modal-body { padding: 24px; }
 
 /* ── Profile modal ── */
+.avatar-img {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
 .profile-avatar-big {
   width: 70px; height: 70px;
   border-radius: 50%;
@@ -1080,6 +1085,7 @@ select.form-input option { background: #0b0f1e; }
     </div>
     <div class="modal-body">
       <div class="profile-avatar-big" id="profileAvatarBig"></div>
+      <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
 
       <div class="tab-bar">
         <button class="tab-btn active" onclick="switchProfileTab('info')">Thông tin</button>
@@ -1088,12 +1094,16 @@ select.form-input option { background: #0b0f1e; }
 
       <div id="profileTabInfo" class="tab-pane active">
         <div class="form-group">
-          <label class="form-label">Username hiện tại</label>
-          <input class="form-input" id="pUsername" disabled>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Đổi username mới</label>
-          <input class="form-input" id="pNewUsername" maxlength="16" placeholder="3-16 ký tự, chữ/số/gạch dưới">
+          <label class="form-label">Username</label>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input class="form-input" id="pUsername" disabled style="padding-right:40px;flex:1;">
+            <button onclick="toggleEditUsername()" id="editUsernameBtn"
+              style="position:absolute;right:8px;background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--cyan);padding:4px;"
+              title="Đổi tên hiển thị">✏️</button>
+          </div>
+          <input class="form-input" id="pNewUsername" maxlength="32"
+            placeholder="Nhập tên hiển thị mới..."
+            style="display:none;margin-top:8px;">
         </div>
         <div class="form-group">
           <label class="form-label">Vai trò</label>
@@ -1466,8 +1476,8 @@ function appendMessage(msg, animate = true) {
   div.style.animation = animate ? 'fadeIn .2s ease' : 'none';
 
   div.innerHTML = `
-    <div class="msg-avatar" style="background:${escHtml(color)}22;color:${escHtml(color)};border:2px solid ${escHtml(color)}44">
-      ${escHtml(initials(msg.username))}
+    <div class="msg-avatar" style="background:${escHtml(color)}22;color:${escHtml(color)};border:2px solid ${escHtml(color)}44;overflow:hidden;">
+      ${msg.avatar ? `<img src="${msg.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : escHtml(initials(msg.username))}
     </div>
     <div class="msg-body">
       <div class="msg-header">
@@ -1731,8 +1741,15 @@ function openProfile() {
   document.getElementById('pNewPass2').value = '';
 
   const big = document.getElementById('profileAvatarBig');
-  big.textContent = initials(me.username);
-  big.style.cssText = `width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;margin:0 auto 20px;background:${color}22;color:${color};border:3px solid ${color}66`;
+  big.style.cssText = `width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;margin:0 auto 20px;background:${color}22;color:${color};border:3px solid ${color}66;overflow:hidden;cursor:pointer;position:relative;`;
+  if (me.avatar) {
+    big.innerHTML = `<img class="avatar-img" src="${me.avatar}"><div id="avatarOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,.4);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;font-size:1.2rem;">📷</div>`;
+  } else {
+    big.innerHTML = `<span>${initials(me.username)}</span><div id="avatarOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,.4);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;font-size:1.2rem;">📷</div>`;
+  }
+  big.onmouseenter = () => { const o = document.getElementById('avatarOverlay'); if(o) o.style.opacity='1'; };
+  big.onmouseleave = () => { const o = document.getElementById('avatarOverlay'); if(o) o.style.opacity='0'; };
+  big.onclick = () => document.getElementById('avatarInput').click();
 
   document.getElementById('badgeGroup').style.display = me.role === 'owner' ? '' : 'none';
 
@@ -1759,6 +1776,60 @@ function switchProfileTab(tab) {
   document.getElementById('profileTabPassword').classList.toggle('active', tab === 'password');
 }
 
+async function uploadAvatar(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('Ảnh tối đa 5MB!', 'error'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    // Nén ảnh
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = document.createElement('canvas');
+      const SIZE = 200;
+      canvas.width = SIZE; canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      // Crop vuông giữa
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min) / 2;
+      const sy = (img.height - min) / 2;
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, SIZE, SIZE);
+      const compressed = canvas.toDataURL('image/jpeg', 0.8);
+      try {
+        const res = await fetch('/api/avatar', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'x-token': token },
+          body: JSON.stringify({ avatar: compressed })
+        });
+        const data = await res.json();
+        if (!res.ok) { toast(data.error || 'Lỗi upload', 'error'); return; }
+        me = { ...me, ...data.user };
+        saveSession(token, me);
+        toast('Đã cập nhật avatar!', 'success');
+        openProfile(); // Refresh modal
+      } catch { toast('Lỗi kết nối', 'error'); }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function toggleEditUsername() {
+  const inp = document.getElementById('pNewUsername');
+  const btn = document.getElementById('editUsernameBtn');
+  const isHidden = inp.style.display === 'none';
+  inp.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? '✅' : '✏️';
+  if (isHidden) {
+    inp.value = document.getElementById('pUsername').value;
+    inp.focus();
+    inp.select();
+  } else {
+    inp.value = '';
+  }
+}
+
 async function saveProfile() {
   const color = document.getElementById('pColor').value;
   const bio = document.getElementById('pBio').value;
@@ -1778,6 +1849,8 @@ async function saveProfile() {
     saveSession(token, me);
     document.getElementById('pUsername').value = me.username;
     document.getElementById('pNewUsername').value = '';
+    document.getElementById('pNewUsername').style.display = 'none';
+    document.getElementById('editUsernameBtn').textContent = '✏️';
     toast('Đã lưu hồ sơ!', 'success');
     closeModal('profileModal');
   } catch { toast('Lỗi kết nối', 'error'); }
