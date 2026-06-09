@@ -1543,9 +1543,9 @@ function sendImage(input) {
   }
   const reader = new FileReader();
   reader.onload = (e) => {
-    // Nén ảnh trước khi gửi
     const img = new Image();
     img.onload = () => {
+      // Nén ảnh
       const canvas = document.createElement('canvas');
       let w = img.width, h = img.height;
       const MAX = 1280;
@@ -1556,6 +1556,24 @@ function sendImage(input) {
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       const compressed = canvas.toDataURL('image/jpeg', 0.75);
+
+      // Hiện preview ngay lập tức không chờ server
+      const tempMsg = {
+        id: 'temp-' + Date.now(),
+        userId: me.id,
+        username: me.username,
+        color: me.color,
+        role: me.role,
+        badge: me.badge || '',
+        type: 'image',
+        content: '',
+        imageData: compressed,
+        avatar: me.avatar || null,
+        timestamp: new Date().toISOString()
+      };
+      appendMessage(tempMsg, true);
+      scrollToBottom();
+
       socket.emit('send_message', { token, type: 'image', imageData: compressed, content: '' });
       input.value = '';
     };

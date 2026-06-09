@@ -401,6 +401,7 @@ io.on('connection', (socket) => {
         type: 'image',
         content: '',
         imageData: imageData,
+        avatar: user.avatar || null,
         timestamp: new Date().toISOString()
       };
       messages.push(msg);
