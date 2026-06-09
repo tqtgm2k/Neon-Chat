@@ -1075,9 +1075,15 @@ select.form-input option { background: #0b0f1e; }
       </div>
       <div class="typing-bar" id="typingBar"></div>
       <div class="input-area">
+        <div id="imagePreviewBar" style="display:none;padding:8px 12px;background:rgba(0,245,255,.06);border-top:1px solid var(--border);align-items:center;gap:10px;">
+          <img id="imagePreviewThumb" style="height:60px;border-radius:8px;object-fit:cover;max-width:80px;">
+          <div style="flex:1;font-size:0.85rem;color:var(--text2);">Ảnh đã chọn</div>
+          <button onclick="cancelImagePreview()" style="background:none;border:none;color:var(--pink);font-size:1.2rem;cursor:pointer;">✕</button>
+          <button onclick="confirmSendImage()" style="background:var(--cyan);color:#000;border:none;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Gửi ➤</button>
+        </div>
         <div class="input-wrap">
           <textarea id="msgInput" placeholder="Nhắn tin..." rows="1" maxlength="2000"></textarea>
-          <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="sendImage(this)">
+          <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="previewImage(this)">
     <button class="img-upload-btn" onclick="document.getElementById('imageInput').click()" title="Gửi ảnh">🖼</button>
     <button class="send-btn" onclick="sendMessage()">➤</button>
         </div>
@@ -1543,9 +1549,11 @@ function deleteMessage(id) {
 }
 
 
-function sendImage(input) {
+let _pendingImageData = null;
+
+function previewImage(input) {
   const file = input.files[0];
-  if (!file || !socket) return;
+  if (!file) return;
   if (file.size > 10 * 1024 * 1024) {
     toast('Ảnh tối đa 10MB!', 'error', 2000);
     input.value = '';
@@ -1567,12 +1575,32 @@ function sendImage(input) {
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       const compressed = canvas.toDataURL('image/jpeg', 0.75);
 
-      socket.emit('send_message', { token, type: 'image', imageData: compressed, content: '' });
-      input.value = '';
+      // Lưu ảnh đã nén và hiện preview
+      _pendingImageData = compressed;
+      document.getElementById('imagePreviewThumb').src = compressed;
+      document.getElementById('imagePreviewBar').style.display = 'flex';
+      document.getElementById('msgInput').placeholder = 'Thêm chú thích... (tuỳ chọn)';
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function cancelImagePreview() {
+  _pendingImageData = null;
+  document.getElementById('imagePreviewBar').style.display = 'none';
+  document.getElementById('imagePreviewThumb').src = '';
+  document.getElementById('msgInput').placeholder = 'Nhắn tin...';
+}
+
+function confirmSendImage() {
+  if (!_pendingImageData || !socket) return;
+  const caption = document.getElementById('msgInput').value.trim();
+  socket.emit('send_message', { token, type: 'image', imageData: _pendingImageData, content: caption });
+  cancelImagePreview();
+  document.getElementById('msgInput').value = '';
+  document.getElementById('msgInput').style.height = 'auto';
 }
 
 function openImage(src) {
