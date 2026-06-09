@@ -1661,10 +1661,14 @@ function initSocket() {
 
 // ── Messages ──────────────────────────────────
 async function loadMessages() {
+  // Không load chat chung nếu đang ở group
+  if (currentGroupId) return;
   try {
     const res = await fetch('/api/messages', { headers: { 'x-token': token } });
     if (!res.ok) return;
     const msgs = await res.json();
+    // Kiểm tra lại sau khi fetch xong (user có thể đã vào group trong lúc chờ)
+    if (currentGroupId) return;
     const container = document.getElementById('messages');
     container.innerHTML = '<div class="msg-system">⚡ Chào mừng đến Neon Chat!</div>';
     msgs.forEach(m => appendMessage(m, false));
