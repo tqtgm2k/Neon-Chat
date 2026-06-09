@@ -1512,8 +1512,7 @@ function loginSuccess(tok, user) {
   saveSession(tok, user);
   showChat();
   initSocket();
-  loadMessages();
-  loadMyGroups();
+  loadMyGroups(); // loadMessages sẽ được gọi bên trong nếu không có group restore
   if (['admin','owner'].includes(user.role)) {
     document.getElementById('adminBtn').style.display = '';
   }
