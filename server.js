@@ -167,9 +167,20 @@ function requireAuth(req, res, next) {
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Vui lòng nhập email và mật khẩu' });
-  const user = users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase().trim());
+  const input = email.toLowerCase().trim();
+
+  // Owner và admin đăng nhập bằng username
+  let user = null;
+  if (['owner', 'admin'].includes(input)) {
+    user = users.find(u => u.username.toLowerCase() === input && ['owner', 'admin'].includes(u.role));
+  }
+  // User thường đăng nhập bằng email
+  if (!user) {
+    user = users.find(u => u.email && u.email.toLowerCase() === input);
+  }
+
   if (!user || user.password !== hashPassword(password))
-    return res.status(401).json({ error: 'Email hoặc mật khẩu không đúng' });
+    return res.status(401).json({ error: 'Thông tin đăng nhập không đúng' });
   if (user.banned) return res.status(403).json({ error: 'Tài khoản đã bị khóa' });
   const token = generateToken(user.id);
   res.json({ token, user: publicUser(user) });
