@@ -68,17 +68,19 @@ async function initData() {
     const [rows] = await pool.execute('SELECT * FROM users');
     users = rows.map(u => ({...u, banned: !!u.banned}));
 
-    // Thêm default accounts nếu chưa có
+    // Thêm default accounts nếu chưa có (không ghi đè nếu đã tồn tại)
     const defaultUsers = [
       { id: "owner-001", username: "owner", password: hashPassword("owner123"), role: "owner", color: "#ff00ff", bio: "👑 Owner", badge: "⚡ OWNER", banned: false },
       { id: "admin-001", username: "admin", password: hashPassword("admin123"), role: "admin", color: "#00ffff", bio: "🛡️ Admin", badge: "🛡️ ADMIN", banned: false }
     ];
+    let needSave = false;
     for (const def of defaultUsers) {
       if (!users.find(u => u.id === def.id)) {
         users.push(def);
+        needSave = true;
       }
     }
-    await saveUsers();
+    if (needSave) await saveUsers();
 
     // Load messages từ MySQL
     const [msgRows] = await pool.execute('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 500');
