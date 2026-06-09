@@ -245,7 +245,7 @@ app.put('/api/profile', requireAuth, (req, res) => {
   const idx = users.findIndex(u => u.id === req.user.id);
   if (idx === -1) return res.status(404).json({ error: 'User not found' });
 
-  // Đổi username
+  // Đổi username (cho phép trùng tên)
   if (newUsername) {
     const uname = newUsername.trim();
     if (uname.length < 2 || uname.length > 32)
