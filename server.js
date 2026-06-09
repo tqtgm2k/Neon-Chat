@@ -273,16 +273,6 @@ app.put('/api/profile', requireAuth, (req, res) => {
   res.json({ user: publicUser(users[idx]) });
 });
 
-// Temp reset owner password - XÓA SAU KHI DÙNG
-app.get('/api/reset-owner', async (req, res) => {
-  const idx = users.findIndex(u => u.id === 'owner-001');
-  if (idx === -1) return res.json({ error: 'owner not found', users: users.map(u=>u.id) });
-  users[idx].password = hashPassword('owner123');
-  users[idx].username = 'owner';
-  await saveUsers();
-  res.json({ ok: true, username: users[idx].username });
-});
-
 // Update avatar
 app.put('/api/avatar', requireAuth, async (req, res) => {
   const { avatar } = req.body || {};
@@ -349,7 +339,11 @@ app.delete('/api/users/:id', requireAuth, (req, res) => {
   }
 
   users = users.filter(u => u.id !== req.params.id);
-  saveUsers();
+  if (dbReady) {
+    pool.execute('DELETE FROM users WHERE id = ?', [req.params.id]).catch(console.error);
+    pool.execute('DELETE FROM messages WHERE userId = ?', [req.params.id]).catch(console.error);
+  }
+  messages = messages.filter(m => m.userId !== req.params.id);
   broadcastUsers();
   res.json({ success: true });
 });
@@ -430,7 +424,9 @@ io.on('connection', (socket) => {
     const idx = messages.findIndex(m => m.id === messageId);
     if (idx !== -1) {
       messages.splice(idx, 1);
-      saveMessages();
+      if (dbReady) {
+        pool.execute('DELETE FROM messages WHERE id = ?', [messageId]).catch(console.error);
+      }
       io.emit('message_deleted', { messageId });
     }
   });
