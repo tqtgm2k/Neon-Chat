@@ -245,12 +245,8 @@ app.put('/api/profile', requireAuth, (req, res) => {
   // Đổi username
   if (newUsername) {
     const uname = newUsername.trim();
-    if (uname.length < 3 || uname.length > 16)
-      return res.status(400).json({ error: 'Tên: 3-16 ký tự' });
-    if (!/^[a-zA-Z0-9_]+$/.test(uname))
-      return res.status(400).json({ error: 'Chỉ dùng chữ, số, gạch dưới' });
-    if (users.find(u => u.username.toLowerCase() === uname.toLowerCase() && u.id !== req.user.id))
-      return res.status(400).json({ error: 'Tên này đã có người dùng' });
+    if (uname.length < 2 || uname.length > 32)
+      return res.status(400).json({ error: 'Tên: 2-32 ký tự' });
     // Cập nhật username trong lịch sử tin nhắn
     messages.forEach(m => { if (m.userId === req.user.id) m.username = uname; });
     saveMessages();
