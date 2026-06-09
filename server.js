@@ -100,12 +100,13 @@ async function saveUsers() {
   if (!dbReady) { try { fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2)); } catch(e){} return; }
   for (const u of users) {
     await pool.execute(`
-      INSERT INTO users (id, username, password, color, bio, role, badge, banned)
-      VALUES (?,?,?,?,?,?,?,?)
+      INSERT INTO users (id, email, username, password, color, bio, role, badge, banned)
+      VALUES (?,?,?,?,?,?,?,?,?)
       ON DUPLICATE KEY UPDATE
-        username=VALUES(username), password=VALUES(password), color=VALUES(color),
-        bio=VALUES(bio), role=VALUES(role), badge=VALUES(badge), banned=VALUES(banned)
-    `, [u.id, u.username, u.password, u.color||'#00f5ff', u.bio||'', u.role||'user', u.badge||'', u.banned?1:0]);
+        email=VALUES(email), username=VALUES(username), password=VALUES(password),
+        color=VALUES(color), bio=VALUES(bio), role=VALUES(role),
+        badge=VALUES(badge), banned=VALUES(banned)
+    `, [u.id, u.email||null, u.username, u.password, u.color||'#00f5ff', u.bio||'', u.role||'user', u.badge||'', u.banned?1:0]);
   }
 }
 
@@ -164,30 +165,32 @@ function requireAuth(req, res, next) {
 
 // Login
 app.post('/api/login', (req, res) => {
-  const { username, password } = req.body || {};
-  if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
-  const user = users.find(u => u.username.toLowerCase() === username.toLowerCase().trim());
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'Vui lòng nhập email và mật khẩu' });
+  const user = users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase().trim());
   if (!user || user.password !== hashPassword(password))
-    return res.status(401).json({ error: 'Wrong username or password' });
-  if (user.banned) return res.status(403).json({ error: 'Account has been banned' });
+    return res.status(401).json({ error: 'Email hoặc mật khẩu không đúng' });
+  if (user.banned) return res.status(403).json({ error: 'Tài khoản đã bị khóa' });
   const token = generateToken(user.id);
   res.json({ token, user: publicUser(user) });
 });
 
 // Register
 app.post('/api/register', (req, res) => {
-  const { username, password } = req.body || {};
-  if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
+  const { email, username, password } = req.body || {};
+  if (!email || !username || !password) return res.status(400).json({ error: 'Vui lòng nhập đầy đủ thông tin' });
   const uname = username.trim();
-  if (uname.length < 3 || uname.length > 16) return res.status(400).json({ error: 'Username: 3-16 characters' });
-  if (password.length < 4) return res.status(400).json({ error: 'Password: minimum 4 characters' });
-  if (!/^[a-zA-Z0-9_]+$/.test(uname)) return res.status(400).json({ error: 'Username: letters, numbers, underscore only' });
-  if (users.find(u => u.username.toLowerCase() === uname.toLowerCase()))
-    return res.status(400).json({ error: 'Username already taken' });
+  const uemail = email.toLowerCase().trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(uemail)) return res.status(400).json({ error: 'Email không hợp lệ' });
+  if (uname.length < 2 || uname.length > 32) return res.status(400).json({ error: 'Tên hiển thị: 2-32 ký tự' });
+  if (password.length < 4) return res.status(400).json({ error: 'Mật khẩu: tối thiểu 4 ký tự' });
+  if (users.find(u => u.email && u.email.toLowerCase() === uemail))
+    return res.status(400).json({ error: 'Email này đã được đăng ký' });
 
   const colors = ['#ff6b35','#00ff88','#ff88cc','#88aaff','#ffaa00','#00aaff','#ff4488','#44ffcc'];
   const newUser = {
     id: 'u' + Date.now(),
+    email: uemail,
     username: uname,
     password: hashPassword(password),
     role: 'user',

@@ -15,7 +15,8 @@ async function initDB() {
   await conn.execute(`
     CREATE TABLE IF NOT EXISTS users (
       id VARCHAR(64) PRIMARY KEY,
-      username VARCHAR(16) UNIQUE NOT NULL,
+      email VARCHAR(255) UNIQUE,
+      username VARCHAR(32) NOT NULL,
       password VARCHAR(255) NOT NULL,
       color VARCHAR(7) DEFAULT '#00f5ff',
       bio VARCHAR(100) DEFAULT '',
@@ -25,6 +26,10 @@ async function initDB() {
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  // Thêm cột email nếu chưa có (migration)
+  try {
+    await conn.execute('ALTER TABLE users ADD COLUMN email VARCHAR(255) UNIQUE AFTER id');
+  } catch(e) {} // Bỏ qua nếu đã có
   await conn.execute(`
     CREATE TABLE IF NOT EXISTS messages (
       id VARCHAR(64) PRIMARY KEY,
