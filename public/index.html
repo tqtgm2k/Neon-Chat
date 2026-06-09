@@ -1206,28 +1206,39 @@ select.form-input option { background: #0b0f1e; }
 <div class="modal-overlay" id="createGroupModal">
   <div class="modal" style="max-width:400px;">
     <div class="modal-header">
-      <span class="modal-title">👥 TẠO GROUP</span>
+      <span class="modal-title">TẠO NHÓM</span>
       <button class="modal-close" onclick="closeModal('createGroupModal')">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Tên group</label>
-        <input class="form-input" id="groupName" maxlength="50" placeholder="Nhập tên group...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Icon</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;" id="groupIconPicker">
-          👥 💬 🎮 🎵 📚 🏆 🔥 ⚡ 🌙 🎯 💡 🎨
+    <div class="modal-body" style="padding:20px;">
+
+      <!-- Avatar group -->
+      <div style="display:flex;justify-content:center;margin-bottom:20px;">
+        <div style="position:relative;cursor:pointer;" onclick="document.getElementById('groupAvatarInput').click()">
+          <div id="groupAvatarPreview" style="width:80px;height:80px;border-radius:16px;background:rgba(0,245,255,.1);border:2px dashed rgba(0,245,255,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:.2s;">
+            <span style="font-size:1.8rem;">📷</span>
+            <span style="font-size:0.68rem;color:var(--text2);">Ảnh nhóm</span>
+          </div>
+          <div style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:0.7rem;">✏️</div>
         </div>
-        <input class="form-input" id="groupIcon" value="👥" style="margin-top:8px;width:60px;text-align:center;font-size:1.3rem;" maxlength="2">
+        <input type="file" id="groupAvatarInput" accept="image/*" style="display:none" onchange="previewGroupAvatar(this)">
       </div>
+
+      <!-- Tên nhóm -->
       <div class="form-group">
-        <label class="form-label">Thêm thành viên</label>
-        <input class="form-input" id="groupMemberSearch" placeholder="🔍 Tìm user..." oninput="renderGroupMemberPicker()">
-        <div id="groupMemberPicker" style="max-height:150px;overflow-y:auto;margin-top:8px;"></div>
+        <label class="form-label">TÊN NHÓM TÁC CHIẾN</label>
+        <input class="form-input" id="groupName" maxlength="50" placeholder="Nhập định danh nhóm...">
       </div>
-      <div id="selectedMembersPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
-      <button class="btn btn-primary" style="margin-top:16px;" onclick="createGroup()">👥 Tạo group</button>
+
+      <!-- Thành viên -->
+      <div class="form-group">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label class="form-label" style="margin:0;">THÀNH VIÊN <span id="selectedMemberCount" style="color:var(--cyan);">(0/100)</span></label>
+          <input class="form-input" id="groupMemberSearch" placeholder="🔍 Tìm..." oninput="renderGroupMemberPicker()" style="width:120px;padding:4px 10px;font-size:0.82rem;">
+        </div>
+        <div id="groupMemberPicker" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:6px;"></div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:12px;font-size:1rem;letter-spacing:1px;" onclick="createGroup()">👥 KHỞI TẠO NHÓM</button>
     </div>
   </div>
 </div>
@@ -1679,6 +1690,11 @@ async function loadMessages() {
 function appendMessage(msg, animate = true) {
   const container = document.getElementById('messages');
   const canDelete = me && ['admin', 'owner'].includes(me.role);
+  // Lấy avatar mới nhất từ allUsers nếu tin nhắn cũ không có avatar
+  if (!msg.avatar && msg.userId) {
+    const sender = allUsers.find(u => u.id === msg.userId);
+    if (sender && sender.avatar) msg.avatar = sender.avatar;
+  }
   const color = msg.color || '#c8d8ff';
   const badgeClass = { owner: 'badge-owner', admin: 'badge-admin' }[msg.role] || '';
   const badgeLabel = msg.badge || (msg.role === 'owner' ? '⚡ OWNER' : msg.role === 'admin' ? '🛡️ ADMIN' : '');
@@ -1811,6 +1827,7 @@ let myGroups = [];
 let currentGroupId = null;
 let selectedMemberIds = [];
 let groupUnread = {};
+let _groupAvatarData = null;
 
 function switchSidebarTab(tab) {
   document.getElementById('sidebarUsers').style.display = tab === 'users' ? '' : 'none';
@@ -1831,7 +1848,9 @@ function renderGroupList() {
     const unread = groupUnread[g.id] || 0;
     return `
       <div class="group-item ${isActive ? 'active' : ''}" onclick="openGroupChat('${g.id}')">
-        <div class="group-avatar">${g.avatar || '👥'}</div>
+        <div class="group-avatar" style="overflow:hidden;">
+          ${g.avatar && g.avatar.startsWith('data:') ? `<img src="${g.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : (g.avatar || '👥')}
+        </div>
         <div class="group-info">
           <div class="group-name">${escHtml(g.name)}</div>
           <div class="group-meta">${g.members ? g.members.length : 0} thành viên</div>
@@ -1879,7 +1898,9 @@ async function openGroupChat(groupId) {
   const headerLogo = document.querySelector('.header-logo');
   headerLogo.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
-      <div style="width:32px;height:32px;border-radius:50%;background:rgba(0,245,255,.1);border:2px solid rgba(0,245,255,.25);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">${group.avatar}</div>
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,245,255,.1);border:2px solid rgba(0,245,255,.25);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;overflow:hidden;">
+        ${group.avatar && group.avatar.startsWith('data:') ? `<img src="${group.avatar}" style="width:100%;height:100%;object-fit:cover;">` : group.avatar || '👥'}
+      </div>
       <div style="min-width:0;flex:1;">
         <div style="font-size:0.92rem;font-weight:700;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;">${escHtml(group.name)}</div>
         <div style="font-size:0.7rem;color:var(--text2);">${group.members.length} thành viên</div>
@@ -1923,12 +1944,36 @@ function backToMain() {
 
 function openCreateGroup() {
   selectedMemberIds = [];
+  _groupAvatarData = null;
   document.getElementById('groupName').value = '';
-  document.getElementById('groupIcon').value = '👥';
   document.getElementById('groupMemberSearch').value = '';
+  document.getElementById('groupAvatarPreview').innerHTML = '<span style="font-size:1.8rem;">📷</span><span style="font-size:0.68rem;color:var(--text2);">Ảnh nhóm</span>';
+  document.getElementById('selectedMemberCount').textContent = '(0/100)';
   renderGroupMemberPicker();
-  renderSelectedMembers();
   openModal('createGroupModal');
+}
+
+function previewGroupAvatar(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 200; canvas.height = 200;
+      const ctx = canvas.getContext('2d');
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min) / 2;
+      const sy = (img.height - min) / 2;
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, 200, 200);
+      _groupAvatarData = canvas.toDataURL('image/jpeg', 0.8);
+      document.getElementById('groupAvatarPreview').innerHTML = `<img src="${_groupAvatarData}" style="width:80px;height:80px;border-radius:14px;object-fit:cover;">`;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
 }
 
 function renderGroupMemberPicker() {
@@ -1936,19 +1981,32 @@ function renderGroupMemberPicker() {
   const picker = document.getElementById('groupMemberPicker');
   const available = allUsers.filter(u => u.id !== me.id &&
     (u.username.toLowerCase().includes(keyword) || !keyword));
-  if (!available.length) { picker.innerHTML = '<div style="color:var(--text2);font-size:0.85rem;padding:8px;">Không tìm thấy</div>'; return; }
+  if (!available.length) {
+    picker.innerHTML = '<div style="color:var(--text2);font-size:0.85rem;padding:12px;text-align:center;">Không tìm thấy</div>';
+    return;
+  }
   picker.innerHTML = available.map(u => {
     const selected = selectedMemberIds.includes(u.id);
+    const isOnline = onlineIds.includes(u.id);
     const color = u.color || '#c8d8ff';
     return `
-      <div onclick="toggleGroupMember('${u.id}')" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;background:${selected ? 'rgba(0,245,255,.1)' : 'transparent'};border:1px solid ${selected ? 'rgba(0,245,255,.3)' : 'transparent'};margin-bottom:4px;transition:.15s;">
-        <div style="width:28px;height:28px;border-radius:50%;background:${color}22;color:${color};display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;flex-shrink:0;">
-          ${u.avatar ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : escHtml(initials(u.username))}
+      <div onclick="toggleGroupMember('${u.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;background:${selected ? 'rgba(0,245,255,.08)' : 'transparent'};transition:.15s;border-bottom:1px solid rgba(255,255,255,.04);">
+        <div style="position:relative;flex-shrink:0;">
+          <div style="width:36px;height:36px;border-radius:50%;background:${color}22;color:${color};border:2px solid ${selected ? color : color+'44'};display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;overflow:hidden;">
+            ${u.avatar ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : escHtml(initials(u.username))}
+          </div>
+          <span style="position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;background:${isOnline ? '#00ff88' : '#444'};border:1px solid var(--panel);"></span>
         </div>
-        <span style="color:${color};font-weight:600;">${escHtml(u.username)}</span>
-        <span style="margin-left:auto;color:${selected ? 'var(--cyan)' : 'var(--text2)'};">${selected ? '✓' : '+'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:0.88rem;color:${color};">${escHtml(u.username)}</div>
+          <div style="font-size:0.72rem;color:var(--text2);">${isOnline ? 'Trực tuyến' : 'Ngoại tuyến'}</div>
+        </div>
+        <div style="width:22px;height:22px;border-radius:6px;border:2px solid ${selected ? 'var(--cyan)' : 'rgba(255,255,255,.2)'};background:${selected ? 'var(--cyan)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;">
+          ${selected ? '<span style="color:#000;font-size:0.75rem;font-weight:900;">✓</span>' : ''}
+        </div>
       </div>`;
   }).join('');
+  document.getElementById('selectedMemberCount').textContent = `(${selectedMemberIds.length}/100)`;
 }
 
 function toggleGroupMember(userId) {
@@ -1975,8 +2033,8 @@ function renderSelectedMembers() {
 
 async function createGroup() {
   const name = document.getElementById('groupName').value.trim();
-  const avatar = document.getElementById('groupIcon').value.trim() || '👥';
-  if (!name) { toast('Nhập tên group!', 'error'); return; }
+  if (!name) { toast('Nhập tên nhóm!', 'error'); return; }
+  const avatar = _groupAvatarData || '👥';
   try {
     const res = await fetch('/api/groups', {
       method: 'POST',
