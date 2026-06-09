@@ -6,6 +6,7 @@
  */
 
 const express = require('express');
+const { pool, initDB } = require('./db');
 const http = require('http');
 const socketIo = require('socket.io');
 const fs = require('fs');
@@ -54,89 +55,68 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 let users = [];
 let messages = [];
+let dbReady = false;
 const onlineSockets = new Map(); // socketId → userId
 
-function initData() {
-  // Default accounts
-  const defaultUsers = [
-    {
-      id: 'owner-001',
-      username: 'owner',
-      password: hashPassword('owner123'),
-      role: 'owner',
-      color: '#ff00ff',
-      bio: '👑 Neon Chat Owner',
-      badge: '⚡ OWNER',
-      createdAt: new Date().toISOString(),
-      banned: false
-    },
-    {
-      id: 'admin-001',
-      username: 'admin',
-      password: hashPassword('admin123'),
-      role: 'admin',
-      color: '#00ffff',
-      bio: '🛡️ Neon Chat Admin',
-      badge: '🛡️ ADMIN',
-      createdAt: new Date().toISOString(),
-      banned: false
-    },
-    {
-      id: 'user-001',
-      username: 'user1',
-      password: hashPassword('user1'),
-      role: 'user',
-      color: '#ff6b35',
-      bio: '',
-      badge: '',
-      createdAt: new Date().toISOString(),
-      banned: false
-    },
-    {
-      id: 'user-002',
-      username: 'user2',
-      password: hashPassword('user2'),
-      role: 'user',
-      color: '#00ff88',
-      bio: '',
-      badge: '',
-      createdAt: new Date().toISOString(),
-      banned: false
-    }
-  ];
+async function initData() {
+  try {
+    await initDB();
+    dbReady = true;
 
-  if (!fs.existsSync(USERS_FILE)) {
-    users = defaultUsers;
-    saveUsers();
-  } else {
-    users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-    // Merge missing default users (owner/admin)
-    for (const def of defaultUsers.filter(u => ['owner-001','admin-001'].includes(u.id))) {
+    // Load users từ MySQL
+    const [rows] = await pool.execute('SELECT * FROM users');
+    users = rows.map(u => ({...u, banned: !!u.banned}));
+
+    // Thêm default accounts nếu chưa có
+    const defaultUsers = [
+      { id: "owner-001", username: "owner", password: hashPassword("owner123"), role: "owner", color: "#ff00ff", bio: "👑 Owner", badge: "⚡ OWNER", banned: false },
+      { id: "admin-001", username: "admin", password: hashPassword("admin123"), role: "admin", color: "#00ffff", bio: "🛡️ Admin", badge: "🛡️ ADMIN", banned: false }
+    ];
+    for (const def of defaultUsers) {
       if (!users.find(u => u.id === def.id)) {
         users.push(def);
       }
     }
-    saveUsers();
-  }
+    await saveUsers();
 
-  if (!fs.existsSync(MESSAGES_FILE)) {
-    messages = [];
-    saveMessages();
-  } else {
-    messages = JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf8'));
-    if (messages.length > 1000) {
-      messages = messages.slice(-500);
-      saveMessages();
-    }
+    // Load messages từ MySQL
+    const [msgRows] = await pool.execute('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 500');
+    messages = msgRows.reverse();
+
+    console.log(`Loaded ${users.length} users, ${messages.length} messages from MySQL`);
+  } catch (err) {
+    console.error('MySQL error, falling back to JSON:', err.message);
+    dbReady = false;
+    // Fallback JSON
+    if (!fs.existsSync(USERS_FILE)) { users = []; saveUsers(); }
+    else users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+    if (!fs.existsSync(MESSAGES_FILE)) { messages = []; saveMessages(); }
+    else messages = JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf8'));
   }
 }
 
-function saveUsers() {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+async function saveUsers() {
+  if (!dbReady) { try { fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2)); } catch(e){} return; }
+  for (const u of users) {
+    await pool.execute(`
+      INSERT INTO users (id, username, password, color, bio, role, badge, banned)
+      VALUES (?,?,?,?,?,?,?,?)
+      ON DUPLICATE KEY UPDATE
+        username=VALUES(username), password=VALUES(password), color=VALUES(color),
+        bio=VALUES(bio), role=VALUES(role), badge=VALUES(badge), banned=VALUES(banned)
+    `, [u.id, u.username, u.password, u.color||'#00f5ff', u.bio||'', u.role||'user', u.badge||'', u.banned?1:0]);
+  }
 }
 
-function saveMessages() {
-  fs.writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2));
+async function saveMessages() {
+  if (!dbReady) { try { fs.writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2)); } catch(e){} return; }
+  // Chỉ lưu tin nhắn mới nhất chưa có trong DB
+  for (const m of messages.slice(-50)) {
+    await pool.execute(`
+      INSERT IGNORE INTO messages (id, userId, username, color, role, badge, type, content, imageData, timestamp)
+      VALUES (?,?,?,?,?,?,?,?,?,?)
+    `, [m.id, m.userId, m.username, m.color||'#00f5ff', m.role||'user', m.badge||'', m.type||'text', m.content||'', m.imageData||null, new Date(m.timestamp)]);
+  }
 }
 
 function publicUser(u) {
@@ -434,7 +414,7 @@ io.on('connection', (socket) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-initData();
+initData().catch(console.error);
 server.listen(PORT, '0.0.0.0', () => {
   const divider = '═'.repeat(45);
   console.log(`\n╔${divider}╗`);
