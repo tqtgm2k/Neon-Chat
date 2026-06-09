@@ -1424,6 +1424,11 @@ function initSocket() {
 
   socket.on('new_message', (msg) => {
     const atBottom = isNearBottom();
+    // Xóa tin nhắn temp nếu là của mình
+    if (msg.userId === me?.id) {
+      const temps = document.querySelectorAll('[id^="msg-temp-"]');
+      temps.forEach(t => t.remove());
+    }
     appendMessage(msg);
     if (atBottom) scrollToBottom();
   });
@@ -1574,7 +1579,8 @@ function sendImage(input) {
       appendMessage(tempMsg, true);
       scrollToBottom();
 
-      socket.emit('send_message', { token, type: 'image', imageData: compressed, content: '' });
+      const tempId = tempMsg.id;
+      socket.emit('send_message', { token, type: 'image', imageData: compressed, content: '', tempId });
       input.value = '';
     };
     img.src = e.target.result;
