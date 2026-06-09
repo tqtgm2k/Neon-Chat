@@ -71,8 +71,8 @@ async function initData() {
 
     // Thêm default accounts nếu chưa có (không ghi đè nếu đã tồn tại)
     const defaultUsers = [
-      { id: "owner-001", username: "owner", password: hashPassword("owner123"), role: "owner", color: "#ff00ff", bio: "👑 Owner", badge: "⚡ OWNER", banned: false },
-      { id: "admin-001", username: "admin", password: hashPassword("admin123"), role: "admin", color: "#00ffff", bio: "🛡️ Admin", badge: "🛡️ ADMIN", banned: false }
+      { id: "owner-001", username: "owner", loginName: "owner", password: hashPassword("owner123"), role: "owner", color: "#ff00ff", bio: "👑 Owner", badge: "⚡ OWNER", banned: false },
+      { id: "admin-001", username: "admin", loginName: "admin", password: hashPassword("admin123"), role: "admin", color: "#00ffff", bio: "🛡️ Admin", badge: "🛡️ ADMIN", banned: false }
     ];
     let needSave = false;
     for (const def of defaultUsers) {
@@ -111,13 +111,13 @@ async function saveUsers() {
   if (!dbReady) { try { fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2)); } catch(e){} return; }
   for (const u of users) {
     await pool.execute(`
-      INSERT INTO users (id, email, username, password, color, bio, role, badge, avatar, banned)
-      VALUES (?,?,?,?,?,?,?,?,?,?)
+      INSERT INTO users (id, email, loginName, username, password, color, bio, role, badge, avatar, banned)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)
       ON DUPLICATE KEY UPDATE
-        email=VALUES(email), username=VALUES(username), password=VALUES(password),
-        color=VALUES(color), bio=VALUES(bio), role=VALUES(role),
-        badge=VALUES(badge), avatar=VALUES(avatar), banned=VALUES(banned)
-    `, [u.id, u.email||null, u.username, u.password, u.color||'#00f5ff', u.bio||'', u.role||'user', u.badge||'', u.avatar||null, u.banned?1:0]);
+        email=VALUES(email), loginName=VALUES(loginName), username=VALUES(username),
+        password=VALUES(password), color=VALUES(color), bio=VALUES(bio),
+        role=VALUES(role), badge=VALUES(badge), avatar=VALUES(avatar), banned=VALUES(banned)
+    `, [u.id, u.email||null, u.loginName||null, u.username, u.password, u.color||'#00f5ff', u.bio||'', u.role||'user', u.badge||'', u.avatar||null, u.banned?1:0]);
   }
 }
 
@@ -181,10 +181,10 @@ app.post('/api/login', (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Vui lòng nhập email và mật khẩu' });
   const input = email.toLowerCase().trim();
 
-  // Owner và admin đăng nhập bằng username
+  // Owner và admin đăng nhập bằng loginName cố định
   let user = null;
   if (['owner', 'admin'].includes(input)) {
-    user = users.find(u => u.username.toLowerCase() === input && ['owner', 'admin'].includes(u.role));
+    user = users.find(u => (u.loginName || u.username).toLowerCase() === input && ['owner', 'admin'].includes(u.role));
   }
   // User thường đăng nhập bằng email
   if (!user) {

@@ -1756,7 +1756,11 @@ function cancelImagePreview() {
 function confirmSendImage() {
   if (!_pendingImageData || !socket) return;
   const caption = document.getElementById('msgInput').value.trim();
-  socket.emit('send_message', { token, type: 'image', imageData: _pendingImageData, content: caption });
+  if (currentGroupId) {
+    socket.emit('send_group_message', { groupId: currentGroupId, token, type: 'image', imageData: _pendingImageData, content: caption });
+  } else {
+    socket.emit('send_message', { token, type: 'image', imageData: _pendingImageData, content: caption });
+  }
   cancelImagePreview();
   document.getElementById('msgInput').value = '';
   document.getElementById('msgInput').style.height = 'auto';

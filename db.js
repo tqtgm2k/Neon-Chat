@@ -34,6 +34,12 @@ async function initDB() {
   try {
     await conn.execute('ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT AFTER badge');
   } catch(e) {}
+  // Thêm cột loginName nếu chưa có
+  try {
+    await conn.execute("ALTER TABLE users ADD COLUMN loginName VARCHAR(32) AFTER email");
+    await conn.execute("UPDATE users SET loginName = 'owner' WHERE id = 'owner-001'");
+    await conn.execute("UPDATE users SET loginName = 'admin' WHERE id = 'admin-001'");
+  } catch(e) {}
   await conn.execute(`
     CREATE TABLE IF NOT EXISTS messages (
       id VARCHAR(64) PRIMARY KEY,
