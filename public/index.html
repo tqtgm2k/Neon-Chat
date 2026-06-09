@@ -2508,16 +2508,31 @@ async function openGroupMembers(groupId) {
 
   // Nút hành động
   const actions = document.getElementById('groupMembersActions');
+  const isSysAdminOrOwner = me && ['admin','owner'].includes(me.role);
+  const canDelete = isGroupAdmin || isSysAdminOrOwner;
+
+  // Admin group và owner/admin hệ thống đều thấy nút giải tán + thêm thành viên
+  // Member thường chỉ thấy nút rời group
+  actions.style.flexDirection = 'column';
+  actions.style.gap = '8px';
+
+  let actionsHTML = '';
+
   if (isGroupAdmin) {
-    actions.innerHTML = `
-      <button class="btn btn-primary" style="flex:1;font-size:0.85rem;" onclick="closeModal('groupMembersModal');openAddMemberModal('${groupId}')">➕ Thêm thành viên</button>
-      <button onclick="confirmDeleteGroup('${groupId}','${group.name.replace(/'/g,"\'")}');closeModal('groupMembersModal');"
-        style="background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:8px;padding:8px 14px;font-size:0.85rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">🗑 Xóa group</button>`;
-  } else {
-    actions.innerHTML = `
-      <button onclick="leaveGroup('${groupId}')"
-        style="flex:1;background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:8px;padding:8px 14px;font-size:0.85rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">🚪 Rời group</button>`;
+    actionsHTML += `<button class="btn btn-primary" style="width:100%;font-size:0.85rem;" onclick="closeModal('groupMembersModal');openAddMemberModal('${groupId}')">➕ Thêm thành viên</button>`;
   }
+
+  if (!isGroupAdmin) {
+    actionsHTML += `<button onclick="leaveGroup('${groupId}')"
+      style="width:100%;background:rgba(255,100,0,.1);border:1px solid rgba(255,100,0,.3);color:#ff6600;border-radius:8px;padding:9px;font-size:0.85rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">🚪 Rời group</button>`;
+  }
+
+  if (canDelete) {
+    actionsHTML += `<button onclick="confirmDeleteGroup('${groupId}','${group.name.replace(/'/g,"\'")}');closeModal('groupMembersModal');"
+      style="width:100%;background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:8px;padding:9px;font-size:0.85rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">🗑 Giải tán nhóm</button>`;
+  }
+
+  actions.innerHTML = actionsHTML;
 
   openModal('groupMembersModal');
 }
