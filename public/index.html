@@ -1930,6 +1930,7 @@ function renderAdminUsers() {
           actions += `<button class="btn-sm btn-admin" onclick="updateUser('${u.id}', {role:'admin'})">⬆️ Admin</button>`;
         }
         actions += `<button class="btn-sm btn-delete" onclick="deleteUser('${u.id}','${escHtml(u.username)}')">🗑 Xóa</button>`;
+        actions += `<button class="btn-sm btn-reset" onclick="resetPassword('${u.id}','${escHtml(u.username)}')">🔑 Reset MK</button>`;
       }
     }
 
@@ -1963,6 +1964,22 @@ async function updateUser(userId, updates) {
     if (!res.ok) { toast(data.error || 'Lỗi cập nhật', 'error'); return; }
     toast('Đã cập nhật!', 'success');
     renderAdminUsers();
+  } catch { toast('Lỗi kết nối', 'error'); }
+}
+
+async function resetPassword(userId, username) {
+  const newPass = prompt(`Nhập mật khẩu mới cho "${username}":`);
+  if (!newPass) return;
+  if (newPass.length < 4) { toast('Mật khẩu tối thiểu 4 ký tự!', 'error'); return; }
+  try {
+    const res = await fetch(`/api/users/${userId}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-token': token },
+      body: JSON.stringify({ newPassword: newPass })
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi reset', 'error'); return; }
+    toast(`Đã reset mật khẩu cho "${username}"!`, 'success');
   } catch { toast('Lỗi kết nối', 'error'); }
 }
 

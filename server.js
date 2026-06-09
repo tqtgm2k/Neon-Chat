@@ -323,6 +323,21 @@ app.put('/api/users/:id', requireAuth, (req, res) => {
   res.json({ success: true, user: publicUser(users[idx]) });
 });
 
+// Admin/Owner: reset user password
+app.post('/api/users/:id/reset-password', requireAuth, async (req, res) => {
+  if (!['admin', 'owner'].includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
+  const { newPassword } = req.body || {};
+  if (!newPassword || newPassword.length < 4) return res.status(400).json({ error: 'Mật khẩu tối thiểu 4 ký tự' });
+  const target = users.find(u => u.id === req.params.id);
+  if (!target) return res.status(404).json({ error: 'User not found' });
+  if (target.role === 'owner') return res.status(403).json({ error: 'Không thể reset mật khẩu owner' });
+  if (req.user.role === 'admin' && target.role === 'admin') return res.status(403).json({ error: 'Không thể reset mật khẩu admin khác' });
+  const idx = users.findIndex(u => u.id === req.params.id);
+  users[idx].password = hashPassword(newPassword);
+  await saveUsers();
+  res.json({ success: true });
+});
+
 // Owner: delete user account
 app.delete('/api/users/:id', requireAuth, (req, res) => {
   if (req.user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
