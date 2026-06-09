@@ -1875,16 +1875,21 @@ async function openGroupChat(groupId) {
   const isGroupAdmin = myMembership && myMembership.role === 'admin';
   const headerLogo = document.querySelector('.header-logo');
   headerLogo.innerHTML = `
-    <div class="logo-dot"></div>
-    <div class="group-header-info">
-      <div class="group-header-name">${group.avatar} ${escHtml(group.name)}</div>
-      <div class="group-header-meta">${group.members.length} thành viên</div>
+    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+      <div style="width:32px;height:32px;border-radius:50%;background:rgba(0,245,255,.1);border:2px solid rgba(0,245,255,.25);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">${group.avatar}</div>
+      <div style="min-width:0;flex:1;">
+        <div style="font-size:0.92rem;font-weight:700;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;">${escHtml(group.name)}</div>
+        <div style="font-size:0.7rem;color:var(--text2);">${group.members.length} thành viên</div>
+      </div>
     </div>
-    <div style="display:flex;gap:6px;margin-left:8px;align-items:center;">
-      <button class="group-action-btn" onclick="openGroupMembers('${group.id}')">👥 Members</button>
-      ${isGroupAdmin ? `<button class="group-action-btn danger" onclick="confirmDeleteGroup('${group.id}','${group.name.replace(/'/g,'\\&apos;')}')">🗑️ Xóa</button>` : ''}
-    </div>
-    <button onclick="backToMain()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:0.8rem;margin-left:4px;">✕</button>`;
+    <div style="display:flex;gap:4px;flex-shrink:0;align-items:center;">
+      <button onclick="openGroupMembers('${group.id}')"
+        style="width:32px;height:32px;border-radius:50%;border:1px solid rgba(0,245,255,.3);background:rgba(0,245,255,.08);color:var(--cyan);cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;"
+        title="Thành viên">👥</button>
+      <button onclick="backToMain()"
+        style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text2);cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:center;"
+        title="Đóng">✕</button>
+    </div>\`;
 
   // Load tin nhắn group
   const container = document.getElementById('messages');
