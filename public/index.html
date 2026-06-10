@@ -1233,7 +1233,20 @@ select.form-input option { background: #0b0f1e; }
       <div id="sidebarGroups" style="display:none;">
         <div class="sidebar-section" style="display:flex;align-items:center;justify-content:space-between;">
           <span>Groups</span>
-          <button onclick="openCreateGroup()" style="background:var(--cyan);color:#000;border:none;border-radius:6px;padding:3px 10px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">+ Tạo</button>
+          <div style="position:relative;">
+            <button id="groupAddBtn" onclick="toggleGroupMenu()"
+              style="width:28px;height:28px;border-radius:50%;background:var(--cyan);color:#000;border:none;font-size:1.1rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
+            <div id="groupAddMenu" style="display:none;position:absolute;right:0;top:34px;background:var(--panel);border:1px solid var(--border);border-radius:10px;min-width:150px;box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:100;overflow:hidden;">
+              <button onclick="toggleGroupMenu();openCreateGroup();"
+                style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;border-bottom:1px solid var(--border);">
+                ✏️ Tạo nhóm mới
+              </button>
+              <button onclick="toggleGroupMenu();openFindGroup();"
+                style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;">
+                🔍 Tìm nhóm
+              </button>
+            </div>
+          </div>
         </div>
         <div id="groupList"></div>
       </div>
@@ -1302,6 +1315,22 @@ select.form-input option { background: #0b0f1e; }
       </div>
 
       <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:12px;font-size:1rem;letter-spacing:1px;" onclick="createGroup()">👥 KHỞI TẠO NHÓM</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+   FIND GROUP MODAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="findGroupModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">🔍 TÌM NHÓM</span>
+      <button class="modal-close" onclick="closeModal('findGroupModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <input class="form-input" id="findGroupSearch" placeholder="Nhập tên nhóm..." oninput="renderFindGroupResults()" style="margin-bottom:12px;">
+      <div id="findGroupResults"></div>
     </div>
   </div>
 </div>
@@ -2141,6 +2170,68 @@ function backToMain() {
   // Load lại tin nhắn chính
   loadMessages();
   renderGroupList();
+}
+
+function toggleGroupMenu() {
+  const menu = document.getElementById('groupAddMenu');
+  const isHidden = menu.style.display === 'none';
+  menu.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    setTimeout(() => document.addEventListener('click', function closeMenu(e) {
+      if (!document.getElementById('groupAddBtn').contains(e.target) &&
+          !document.getElementById('groupAddMenu').contains(e.target)) {
+        document.getElementById('groupAddMenu').style.display = 'none';
+        document.removeEventListener('click', closeMenu);
+      }
+    }), 0);
+  }
+}
+
+function openFindGroup() {
+  document.getElementById('findGroupSearch').value = '';
+  document.getElementById('findGroupResults').innerHTML = '';
+  openModal('findGroupModal');
+  renderFindGroupResults();
+}
+
+async function renderFindGroupResults() {
+  const keyword = document.getElementById('findGroupSearch').value.trim();
+  const res = await fetch(`/api/groups/search?q=${encodeURIComponent(keyword)}`, {
+    headers: { 'x-token': token }
+  });
+  if (!res.ok) return;
+  const list = await res.json();
+  const el = document.getElementById('findGroupResults');
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;font-size:0.85rem;">Không tìm thấy nhóm nào</div>';
+    return;
+  }
+  el.innerHTML = list.map(g => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:rgba(0,0,0,.2);">
+      <div style="width:40px;height:40px;border-radius:10px;background:rgba(0,245,255,.1);border:2px solid rgba(0,245,255,.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;overflow:hidden;flex-shrink:0;">
+        ${g.avatar && g.avatar.startsWith('data:') ? `<img src="${g.avatar}" style="width:100%;height:100%;object-fit:cover;">` : (g.avatar || '👥')}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:0.9rem;color:var(--text);">${escHtml(g.name)}</div>
+        <div style="font-size:0.75rem;color:var(--text2);">${g.memberCount} thành viên</div>
+      </div>
+      ${g.isMember
+        ? `<span style="font-size:0.75rem;color:var(--cyan);border:1px solid rgba(0,245,255,.3);padding:3px 8px;border-radius:6px;">Đã tham gia</span>`
+        : `<button onclick="joinGroup('${g.id}')" style="background:var(--cyan);color:#000;border:none;border-radius:8px;padding:5px 12px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Tham gia</button>`
+      }
+    </div>`).join('');
+}
+
+async function joinGroup(groupId) {
+  try {
+    const res = await fetch(`/api/groups/${groupId}/join`, {
+      method: 'POST', headers: { 'x-token': token }
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi tham gia', 'error'); return; }
+    toast('Đã tham gia nhóm!', 'success');
+    renderFindGroupResults(); // Refresh
+  } catch { toast('Lỗi kết nối', 'error'); }
 }
 
 function openCreateGroup() {

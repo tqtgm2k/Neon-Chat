@@ -445,6 +445,40 @@ app.get('/api/groups/:id/messages', requireAuth, async (req, res) => {
   res.json(rows.reverse());
 });
 
+// Tìm kiếm group (tất cả group public)
+app.get('/api/groups/search', requireAuth, (req, res) => {
+  const keyword = (req.query.q || '').toLowerCase().trim();
+  const result = groups
+    .filter(g => !keyword || g.name.toLowerCase().includes(keyword))
+    .map(g => ({
+      id: g.id,
+      name: g.name,
+      avatar: g.avatar,
+      memberCount: g.members.length,
+      isMember: g.members.some(m => m.userId === req.user.id)
+    }))
+    .slice(0, 20);
+  res.json(result);
+});
+
+// Tham gia group
+app.post('/api/groups/:id/join', requireAuth, async (req, res) => {
+  const group = groups.find(g => g.id === req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (group.members.find(m => m.userId === req.user.id))
+    return res.status(400).json({ error: 'Đã là thành viên' });
+  if (dbReady) {
+    await pool.execute('INSERT INTO group_members (groupId, userId, role) VALUES (?,?,?)',
+      [group.id, req.user.id, 'member']);
+  }
+  group.members.push({ groupId: group.id, userId: req.user.id, role: 'member' });
+  for (const [sid, uid] of onlineSockets) {
+    if (uid === req.user.id) io.to(sid).emit('group_added', group);
+  }
+  io.emit('group_updated', group);
+  res.json({ success: true });
+});
+
 // Admin/Owner: reset user password
 app.post('/api/users/:id/reset-password', requireAuth, async (req, res) => {
   if (!['admin', 'owner'].includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
