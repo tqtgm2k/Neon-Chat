@@ -1006,19 +1006,23 @@ select.form-input option { background: #0b0f1e; }
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.92);
+  background: rgba(0,0,0,.95);
   z-index: 9999;
   align-items: center;
   justify-content: center;
-  cursor: zoom-out;
+  overflow: hidden;
 }
 .lightbox.open { display: flex; }
 .lightbox img {
   max-width: 95vw;
-  max-height: 95vh;
+  max-height: 82vh;
   border-radius: 8px;
-  box-shadow: 0 0 60px rgba(0,245,255,.15);
+  box-shadow: 0 0 60px rgba(0,245,255,.1);
+  transition: transform .2s ease;
+  transform-origin: center;
+  cursor: grab;
 }
+.lightbox img:active { cursor: grabbing; }
 .img-upload-btn {
   background: none;
   border: none;
@@ -1640,10 +1644,9 @@ function initSocket() {
 
   socket.on('new_message', (msg) => {
     const atBottom = isNearBottom();
-    // Xóa tin nhắn temp nếu là của mình
-    if (msg.userId === me?.id) {
-      const temps = document.querySelectorAll('[id^="msg-temp-"]');
-      temps.forEach(t => t.remove());
+    // Xóa temp preview nếu là tin của mình
+    if (msg.userId === me?.id && msg.type === 'image') {
+      document.querySelectorAll('[id^="msg-temp-"]').forEach(t => t.remove());
     }
     appendMessage(msg);
     if (atBottom) scrollToBottom();
@@ -1890,24 +1893,131 @@ function cancelImagePreview() {
 function confirmSendImage() {
   if (!_pendingImageData || !socket) return;
   const caption = document.getElementById('msgInput').value.trim();
+  const imgData = _pendingImageData;
+
+  // Hiện preview ngay lập tức
+  const tempMsg = {
+    id: 'temp-' + Date.now(),
+    userId: me.id,
+    username: me.username,
+    color: me.color,
+    role: me.role,
+    badge: me.badge || '',
+    type: 'image',
+    content: caption,
+    imageData: imgData,
+    avatar: me.avatar || null,
+    timestamp: new Date().toISOString()
+  };
+  appendMessage(tempMsg, true);
+  scrollToBottom();
+
+  // Gửi lên server ngầm
   if (currentGroupId) {
-    socket.emit('send_group_message', { groupId: currentGroupId, token, type: 'image', imageData: _pendingImageData, content: caption });
+    socket.emit('send_group_message', { groupId: currentGroupId, token, type: 'image', imageData: imgData, content: caption });
   } else {
-    socket.emit('send_message', { token, type: 'image', imageData: _pendingImageData, content: caption });
+    socket.emit('send_message', { token, type: 'image', imageData: imgData, content: caption });
   }
+
   cancelImagePreview();
   document.getElementById('msgInput').value = '';
   document.getElementById('msgInput').style.height = 'auto';
 }
 
+let _zoomScale = 1;
+let _zoomDragStart = null;
+let _zoomOffset = { x: 0, y: 0 };
+let _pinchDist = null;
+
 function openImage(src) {
+  _zoomScale = 1;
+  _zoomOffset = { x: 0, y: 0 };
   const lb = document.getElementById('lightbox');
-  document.getElementById('lightboxImg').src = src;
+  const img = document.getElementById('lightboxImg');
+  img.src = src;
+  img.style.transform = 'translate(0px,0px) scale(1)';
+  document.getElementById('zoomLabel').textContent = '100%';
   lb.classList.add('open');
+  setupLightboxGestures(img);
 }
 
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
+  _zoomScale = 1;
+  _zoomOffset = { x: 0, y: 0 };
+}
+
+function zoomImg(delta) {
+  if (delta === 0) { // Reset
+    _zoomScale = 1;
+    _zoomOffset = { x: 0, y: 0 };
+  } else {
+    _zoomScale = Math.min(5, Math.max(0.5, _zoomScale + delta));
+  }
+  applyZoom();
+}
+
+function applyZoom() {
+  const img = document.getElementById('lightboxImg');
+  img.style.transform = `translate(${_zoomOffset.x}px,${_zoomOffset.y}px) scale(${_zoomScale})`;
+  document.getElementById('zoomLabel').textContent = Math.round(_zoomScale * 100) + '%';
+}
+
+function setupLightboxGestures(img) {
+  // Mouse wheel zoom
+  img.onwheel = (e) => {
+    e.preventDefault();
+    _zoomScale = Math.min(5, Math.max(0.5, _zoomScale - e.deltaY * 0.001));
+    applyZoom();
+  };
+
+  // Mouse drag
+  img.onmousedown = (e) => {
+    _zoomDragStart = { x: e.clientX - _zoomOffset.x, y: e.clientY - _zoomOffset.y };
+    img.style.cursor = 'grabbing';
+  };
+  img.onmousemove = (e) => {
+    if (!_zoomDragStart) return;
+    _zoomOffset.x = e.clientX - _zoomDragStart.x;
+    _zoomOffset.y = e.clientY - _zoomDragStart.y;
+    applyZoom();
+  };
+  img.onmouseup = () => { _zoomDragStart = null; img.style.cursor = 'grab'; };
+  img.onmouseleave = () => { _zoomDragStart = null; };
+
+  // Touch pinch zoom + drag
+  img.ontouchstart = (e) => {
+    if (e.touches.length === 2) {
+      _pinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    } else if (e.touches.length === 1) {
+      _zoomDragStart = { x: e.touches[0].clientX - _zoomOffset.x, y: e.touches[0].clientY - _zoomOffset.y };
+    }
+  };
+  img.ontouchmove = (e) => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      if (_pinchDist) {
+        _zoomScale = Math.min(5, Math.max(0.5, _zoomScale * (dist / _pinchDist)));
+        _pinchDist = dist;
+        applyZoom();
+      }
+    } else if (e.touches.length === 1 && _zoomDragStart) {
+      _zoomOffset.x = e.touches[0].clientX - _zoomDragStart.x;
+      _zoomOffset.y = e.touches[0].clientY - _zoomDragStart.y;
+      applyZoom();
+    }
+  };
+  img.ontouchend = (e) => {
+    _pinchDist = null;
+    if (e.touches.length === 0) _zoomDragStart = null;
+  };
 }
 
 // ══════════════════════════════
@@ -2883,8 +2993,15 @@ function openAddMemberModal(groupId) {
 
 </script>
 
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <img id="lightboxImg" src="">
+<div class="lightbox" id="lightbox">
+  <div id="lightboxBg" onclick="closeLightbox()" style="position:absolute;inset:0;"></div>
+  <img id="lightboxImg" src="" style="position:relative;z-index:1;touch-action:none;">
+  <div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:2;">
+    <button onclick="zoomImg(-0.25)" style="width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.3rem;cursor:pointer;">−</button>
+    <button onclick="zoomImg(0)" style="min-width:40px;height:40px;border-radius:20px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:0.8rem;cursor:pointer;padding:0 10px;" id="zoomLabel">100%</button>
+    <button onclick="zoomImg(0.25)" style="width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.3rem;cursor:pointer;">+</button>
+    <button onclick="closeLightbox()" style="width:40px;height:40px;border-radius:50%;background:rgba(255,0,127,.3);border:1px solid rgba(255,0,127,.5);color:#fff;font-size:1rem;cursor:pointer;">✕</button>
+  </div>
 </div>
 
 
