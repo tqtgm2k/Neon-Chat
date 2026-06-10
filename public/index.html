@@ -523,6 +523,8 @@ body::after {
   padding-top: 2px;
 }
 .msg:hover .msg-actions { opacity: 1; }
+.msg { -webkit-touch-callout: none; }
+.msg-image { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; pointer-events: auto; }
 .msg-action-btn {
   background: none;
   border: none;
@@ -1791,7 +1793,7 @@ function appendMessage(msg, animate = true) {
         ${badgeLabel ? `<span class="msg-badge ${badgeClass}">${escHtml(badgeLabel)}</span>` : ''}
         <span class="msg-time">${fmtTime(msg.timestamp)}</span>
       </div>
-      <div class="msg-content">${isImage ? `<img class="msg-image" src="${msg.imageData}" onclick="openImage(this.src)">` : linkify(msg.content)}</div>
+      <div class="msg-content">${isImage ? `<img class="msg-image" src="${msg.imageData}" onclick="openImage(this.src)" oncontextmenu="return false;" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">` : linkify(msg.content)}</div>
     </div>
     <div class="msg-actions">
       ${!isImage ? `<button class="msg-action-btn" onclick="copyMsgText(this)" title="Sao chép">📋</button>` : ''}
