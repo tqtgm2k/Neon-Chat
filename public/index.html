@@ -2997,15 +2997,17 @@ async function openGroupMembers(groupId) {
 
   let actionsHTML = '';
 
-  // Thêm thành viên: group admin, sys admin, owner
-  if (effectiveAdmin) {
-    actionsHTML += `<button class="btn btn-primary" style="width:100%;font-size:0.85rem;" onclick="closeModal('groupMembersModal');openAddMemberModal('${groupId}')">➕ Thêm thành viên</button>`;
-  }
+  // Thêm thành viên: tất cả mọi người
+  actionsHTML += `<button class="btn btn-primary" style="width:100%;font-size:0.85rem;" onclick="closeModal('groupMembersModal');openAddMemberModal('${groupId}')">➕ Thêm thành viên</button>`;
 
-  // Rời group: chỉ member thường và group admin (sys owner/admin không cần rời)
-  if (!isSysOwner && !isSysAdmin) {
+  // Rời group: không hiện với sys owner/admin
+  // Group admin chỉ được rời nếu có ít nhất 2 group admin
+  const canLeave = !isSysOwner && !isSysAdmin && (!isGroupAdmin || groupAdminCount >= 2);
+  if (canLeave) {
     actionsHTML += `<button onclick="leaveGroup('${groupId}')"
       style="width:100%;background:rgba(255,100,0,.1);border:1px solid rgba(255,100,0,.3);color:#ff6600;border-radius:8px;padding:9px;font-size:0.85rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">🚪 Rời group</button>`;
+  } else if (isGroupAdmin && groupAdminCount < 2 && !isSysOwner && !isSysAdmin) {
+    actionsHTML += `<div style="text-align:center;color:var(--text2);font-size:0.78rem;padding:6px;">Cần thêm admin nhóm trước khi rời</div>`;
   }
 
   // Giải tán: group admin, sys admin, owner
