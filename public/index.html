@@ -1673,8 +1673,7 @@ function initSocket() {
 
   socket.on('new_message', (msg) => {
     const atBottom = isNearBottom();
-    // Xóa temp preview nếu là tin của mình
-    if (msg.userId === me?.id && msg.type === 'image') {
+    if (msg.userId === me?.id) {
       document.querySelectorAll('[id^="msg-temp-"]').forEach(t => t.remove());
     }
     appendMessage(msg);
@@ -1715,6 +1714,9 @@ function initSocket() {
   socket.on('new_group_message', (msg) => {
     if (msg.groupId === currentGroupId) {
       const atBottom = isNearBottom();
+      if (msg.userId === me?.id) {
+        document.querySelectorAll('[id^="msg-temp-"]').forEach(t => t.remove());
+      }
       appendMessage(msg);
       if (atBottom) scrollToBottom();
     } else {
@@ -2948,8 +2950,11 @@ async function openGroupMembers(groupId) {
   document.getElementById('groupMembersCount').textContent =
     `${count} thành viên • ${onlineCount} đang online`;
 
-  const myMembership = group.members.find(m => m.userId === (window.me && window.me.id));
+  const myMembership = group.members.find(m => m.userId === me.id);
   const isGroupAdmin = myMembership && myMembership.role === 'admin';
+  const isSysOwner = me.role === 'owner';
+  const isSysAdmin = me.role === 'admin';
+  const effectiveAdmin = isGroupAdmin || isSysAdmin || isSysOwner;
 
   const list = document.getElementById('membersList');
   // Sắp xếp admin lên trên
@@ -2987,26 +2992,24 @@ async function openGroupMembers(groupId) {
 
   // Nút hành động
   const actions = document.getElementById('groupMembersActions');
-  const isSysAdminOrOwner = me && ['admin','owner'].includes(me.role);
-  const canDelete = isGroupAdmin || isSysAdminOrOwner;
-
-  // Admin group và owner/admin hệ thống đều thấy nút giải tán + thêm thành viên
-  // Member thường chỉ thấy nút rời group
   actions.style.flexDirection = 'column';
   actions.style.gap = '8px';
 
   let actionsHTML = '';
 
-  if (isGroupAdmin) {
+  // Thêm thành viên: group admin, sys admin, owner
+  if (effectiveAdmin) {
     actionsHTML += `<button class="btn btn-primary" style="width:100%;font-size:0.85rem;" onclick="closeModal('groupMembersModal');openAddMemberModal('${groupId}')">➕ Thêm thành viên</button>`;
   }
 
-  if (!isGroupAdmin) {
+  // Rời group: chỉ member thường và group admin (sys owner/admin không cần rời)
+  if (!isSysOwner && !isSysAdmin) {
     actionsHTML += `<button onclick="leaveGroup('${groupId}')"
       style="width:100%;background:rgba(255,100,0,.1);border:1px solid rgba(255,100,0,.3);color:#ff6600;border-radius:8px;padding:9px;font-size:0.85rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">🚪 Rời group</button>`;
   }
 
-  if (canDelete) {
+  // Giải tán: group admin, sys admin, owner
+  if (effectiveAdmin) {
     actionsHTML += `<button onclick="confirmDeleteGroup('${groupId}','${group.name.replace(/'/g,"\'")}');closeModal('groupMembersModal');"
       style="width:100%;background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:8px;padding:9px;font-size:0.85rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">🗑 Giải tán nhóm</button>`;
   }
@@ -3017,6 +3020,46 @@ async function openGroupMembers(groupId) {
 }
 
 // ── KICK THÀNH VIÊN ────────────────────────────────────────────────────────
+async function promoteGroupMember(groupId, userId, username) {
+  if (!confirm(`Đặt ${username} làm admin group?`)) return;
+  try {
+    const res = await fetch(`/api/groups/${groupId}/members/${userId}/role`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-token': token },
+      body: JSON.stringify({ role: 'admin' })
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi', 'error'); return; }
+    toast(`Đã đặt ${username} làm admin!`, 'success');
+    const group = myGroups.find(g => g.id === groupId);
+    if (group) {
+      const m = group.members.find(m => m.userId === userId);
+      if (m) m.role = 'admin';
+      openGroupMembers(groupId);
+    }
+  } catch { toast('Lỗi kết nối', 'error'); }
+}
+
+async function demoteGroupMember(groupId, userId, username) {
+  if (!confirm(`Hạ ${username} xuống thành viên thường?`)) return;
+  try {
+    const res = await fetch(`/api/groups/${groupId}/members/${userId}/role`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-token': token },
+      body: JSON.stringify({ role: 'member' })
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi', 'error'); return; }
+    toast(`Đã hạ ${username} xuống member!`, 'success');
+    const group = myGroups.find(g => g.id === groupId);
+    if (group) {
+      const m = group.members.find(m => m.userId === userId);
+      if (m) m.role = 'member';
+      openGroupMembers(groupId);
+    }
+  } catch { toast('Lỗi kết nối', 'error'); }
+}
+
 async function kickGroupMember(groupId, userId, username) {
   if (!confirm(`Kick ${username} khỏi group?`)) return;
   try {

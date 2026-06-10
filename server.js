@@ -385,7 +385,8 @@ app.delete('/api/groups/:id', requireAuth, async (req, res) => {
   const group = groups.find(g => g.id === req.params.id);
   if (!group) return res.status(404).json({ error: 'Group not found' });
   const member = group.members.find(m => m.userId === req.user.id);
-  if (!member || member.role !== 'admin') return res.status(403).json({ error: 'Chỉ admin group mới xóa được' });
+  const isSysPriv = ['owner','admin'].includes(req.user.role);
+  if (!isSysPriv && (!member || member.role !== 'admin')) return res.status(403).json({ error: 'Không có quyền xóa group' });
 
   if (dbReady) {
     await pool.execute('DELETE FROM groups_chat WHERE id = ?', [req.params.id]);
@@ -402,7 +403,8 @@ app.post('/api/groups/:id/members', requireAuth, async (req, res) => {
   const group = groups.find(g => g.id === req.params.id);
   if (!group) return res.status(404).json({ error: 'Group not found' });
   const me = group.members.find(m => m.userId === req.user.id);
-  if (!me || me.role !== 'admin') return res.status(403).json({ error: 'Chỉ admin group mới thêm được' });
+  const isSysPriv = ['owner','admin'].includes(req.user.role);
+  if (!isSysPriv && (!me || me.role !== 'admin')) return res.status(403).json({ error: 'Không có quyền thêm thành viên' });
   const { userId } = req.body || {};
   if (group.members.find(m => m.userId === userId)) return res.status(400).json({ error: 'Đã là thành viên' });
 
@@ -423,7 +425,8 @@ app.delete('/api/groups/:id/members/:userId', requireAuth, async (req, res) => {
   if (!group) return res.status(404).json({ error: 'Group not found' });
   const targetId = req.params.userId;
   const me = group.members.find(m => m.userId === req.user.id);
-  if (targetId !== req.user.id && (!me || me.role !== 'admin'))
+  const isSysPriv = ['owner','admin'].includes(req.user.role);
+  if (targetId !== req.user.id && !isSysPriv && (!me || me.role !== 'admin'))
     return res.status(403).json({ error: 'Không có quyền' });
 
   if (dbReady) {
@@ -443,6 +446,26 @@ app.get('/api/groups/:id/messages', requireAuth, async (req, res) => {
   const [rows] = await pool.execute(
     'SELECT * FROM group_messages WHERE groupId = ? ORDER BY timestamp DESC LIMIT 80', [req.params.id]);
   res.json(rows.reverse());
+});
+
+// Đổi role thành viên trong group
+app.put('/api/groups/:id/members/:userId/role', requireAuth, async (req, res) => {
+  const group = groups.find(g => g.id === req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  const myMember = group.members.find(m => m.userId === req.user.id);
+  const isSysPriv = ['owner','admin'].includes(req.user.role);
+  if (!isSysPriv && (!myMember || myMember.role !== 'admin')) return res.status(403).json({ error: 'Không có quyền' });
+  const { role } = req.body || {};
+  if (!['admin', 'member'].includes(role)) return res.status(400).json({ error: 'Role không hợp lệ' });
+  const target = group.members.find(m => m.userId === req.params.userId);
+  if (!target) return res.status(404).json({ error: 'Thành viên không tồn tại' });
+  target.role = role;
+  if (dbReady) {
+    await pool.execute('UPDATE group_members SET role = ? WHERE groupId = ? AND userId = ?',
+      [role, group.id, req.params.userId]);
+  }
+  io.emit('group_updated', group);
+  res.json({ success: true });
 });
 
 // Tìm kiếm group (tất cả group public)
