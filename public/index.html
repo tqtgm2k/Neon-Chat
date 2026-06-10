@@ -1690,8 +1690,8 @@ async function loadMessages() {
 function appendMessage(msg, animate = true) {
   const container = document.getElementById('messages');
   const canDelete = me && ['admin', 'owner'].includes(me.role);
-  // Lấy avatar mới nhất từ allUsers nếu tin nhắn cũ không có avatar
-  if (!msg.avatar && msg.userId) {
+  // Lấy avatar mới nhất từ allUsers
+  if (msg.userId) {
     const sender = allUsers.find(u => u.id === msg.userId);
     if (sender && sender.avatar) msg.avatar = sender.avatar;
   }
@@ -1967,7 +1967,11 @@ function previewGroupAvatar(input) {
       const sx = (img.width - min) / 2;
       const sy = (img.height - min) / 2;
       ctx.drawImage(img, sx, sy, min, min, 0, 0, 200, 200);
-      _groupAvatarData = canvas.toDataURL('image/jpeg', 0.8);
+      _groupAvatarData = canvas.toDataURL('image/jpeg', 0.7);
+      // Nếu vẫn lớn hơn 500KB thì nén thêm
+      if (_groupAvatarData.length > 500000) {
+        _groupAvatarData = canvas.toDataURL('image/jpeg', 0.4);
+      }
       document.getElementById('groupAvatarPreview').innerHTML = `<img src="${_groupAvatarData}" style="width:80px;height:80px;border-radius:14px;object-fit:cover;">`;
     };
     img.src = e.target.result;

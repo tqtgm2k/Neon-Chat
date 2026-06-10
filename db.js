@@ -59,10 +59,14 @@ async function initDB() {
       id VARCHAR(64) PRIMARY KEY,
       name VARCHAR(50) NOT NULL,
       createdBy VARCHAR(64) NOT NULL,
-      avatar VARCHAR(10) DEFAULT '👥',
+      avatar MEDIUMTEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  // Migration: đổi cột avatar thành MEDIUMTEXT nếu chưa
+  try {
+    await conn.execute('ALTER TABLE groups_chat MODIFY COLUMN avatar MEDIUMTEXT');
+  } catch(e) {}
   await conn.execute(`
     CREATE TABLE IF NOT EXISTS group_members (
       groupId VARCHAR(64) NOT NULL,
