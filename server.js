@@ -695,7 +695,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('send_group_message', async ({ groupId, content, token, type, imageData }) => {
+  socket.on('send_group_message', async ({ groupId, content, token, type, imageData, fileKey, fileUrl, fileName, fileSize, fileMime, fileExpires }) => {
     const payload = verifyToken(token);
     if (!payload) return;
     const user = users.find(u => u.id === payload.userId);
@@ -703,13 +703,16 @@ io.on('connection', (socket) => {
     const group = groups.find(g => g.id === groupId);
     if (!group || !group.members.find(m => m.userId === user.id)) return;
 
-    const msgType = type === 'image' ? 'image' : 'text';
+    const msgType = ['image','video','file'].includes(type) ? type : 'text';
+
     if (msgType === 'text') {
       const text = String(content || '').trim();
       if (!text || text.length > 2000) return;
-    } else {
+    } else if (msgType === 'image') {
       if (!imageData || !imageData.startsWith('data:image/')) return;
       if (imageData.length > 3 * 1024 * 1024) return;
+    } else {
+      if (!fileKey) return;
     }
 
     const msg = {
@@ -723,6 +726,12 @@ io.on('connection', (socket) => {
       type: msgType,
       content: msgType === 'text' ? String(content).trim() : '',
       imageData: msgType === 'image' ? imageData : null,
+      fileKey: fileKey || null,
+      fileUrl: fileUrl || null,
+      fileName: fileName || null,
+      fileSize: fileSize || null,
+      fileMime: fileMime || null,
+      fileExpires: fileExpires || null,
       avatar: user.avatar || null,
       timestamp: new Date().toISOString()
     };
