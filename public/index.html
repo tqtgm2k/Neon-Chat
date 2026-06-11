@@ -1155,7 +1155,11 @@ select.form-input option { background: #0b0f1e; }
       </div>
       <div class="form-group">
         <label class="form-label">Mật khẩu</label>
-        <input class="form-input" id="loginPass" type="password" placeholder="Nhập mật khẩu..." autocomplete="current-password">
+        <div style="position:relative;">
+          <input class="form-input" id="loginPass" type="password" placeholder="Nhập mật khẩu..." autocomplete="current-password" style="padding-right:42px;">
+          <button type="button" onclick="togglePass('loginPass','loginPassEye')" id="loginPassEye"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem;padding:0;line-height:1;">👁</button>
+        </div>
       </div>
       <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">
         ⚡ Đăng nhập
@@ -1175,11 +1179,19 @@ select.form-input option { background: #0b0f1e; }
       </div>
       <div class="form-group">
         <label class="form-label">Mật khẩu</label>
-        <input class="form-input" id="regPass" type="password" placeholder="Tối thiểu 4 ký tự">
+        <div style="position:relative;">
+          <input class="form-input" id="regPass" type="password" placeholder="Tối thiểu 4 ký tự" style="padding-right:42px;">
+          <button type="button" onclick="togglePass('regPass','regPassEye')" id="regPassEye"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem;padding:0;line-height:1;">👁</button>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Xác nhận mật khẩu</label>
-        <input class="form-input" id="regPass2" type="password" placeholder="Nhập lại mật khẩu">
+        <div style="position:relative;">
+          <input class="form-input" id="regPass2" type="password" placeholder="Nhập lại mật khẩu" style="padding-right:42px;">
+          <button type="button" onclick="togglePass('regPass2','regPass2Eye')" id="regPass2Eye"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem;padding:0;line-height:1;">👁</button>
+        </div>
       </div>
       <button class="btn btn-primary" id="regBtn" onclick="doRegister()">
         🚀 Tạo tài khoản
@@ -1550,6 +1562,19 @@ function switchTab(tab) {
 }
 
 // ── Login ────────────────────────────────────
+function togglePass(inputId, btnId) {
+  const inp = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPass').value;
@@ -2950,6 +2975,7 @@ async function openGroupMembers(groupId) {
   document.getElementById('groupMembersCount').textContent =
     `${count} thành viên • ${onlineCount} đang online`;
 
+  if (!me) return;
   const myMembership = group.members.find(m => m.userId === me.id);
   const isGroupAdmin = myMembership && myMembership.role === 'admin';
   const isSysOwner = me.role === 'owner';
@@ -2994,9 +3020,9 @@ async function openGroupMembers(groupId) {
       const canPromote = !isGroupAdminMember && !isTargetSysOwner && !isTargetSysAdmin
         && (isGroupAdmin || isSysAdmin || isSysOwner);
 
-      // Demote: chỉ sys admin và owner
+      // Demote: sys admin, owner và group admin (chỉ hạ group admin khác, không hạ sys)
       const canDemote = isGroupAdminMember && !isTargetSysOwner && !isTargetSysAdmin
-        && (isSysAdmin || isSysOwner);
+        && (isSysAdmin || isSysOwner || isGroupAdmin);
 
       if (canPromote)
         actionBtns += `<button onclick="promoteGroupMember('${groupId}','${m.userId}','${escHtml(displayName)}')"
@@ -3045,8 +3071,18 @@ async function openGroupMembers(groupId) {
 
   // Giải tán: group admin, sys admin, owner
   if (effectiveAdmin) {
-    actionsHTML += `<button onclick="confirmDeleteGroup('${groupId}','${group.name.replace(/'/g,"\'")}');closeModal('groupMembersModal');"
-      style="width:100%;background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:8px;padding:9px;font-size:0.85rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">🗑 Giải tán nhóm</button>`;
+    const delBtn = document.createElement('button');
+    delBtn.style.cssText = 'width:100%;background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:8px;padding:9px;font-size:0.85rem;cursor:pointer;font-family:Rajdhani,sans-serif;font-weight:700;';
+    delBtn.textContent = '🗑 Giải tán nhóm';
+    delBtn.onclick = () => { confirmDeleteGroup(groupId, group.name); closeModal('groupMembersModal'); };
+    actionsHTML += delBtn.outerHTML;
+    // Gắn event sau khi render
+    setTimeout(() => {
+      const btn = actions.querySelector('button:last-child');
+      if (btn && btn.textContent.includes('Giải tán')) {
+        btn.onclick = () => { confirmDeleteGroup(groupId, group.name); closeModal('groupMembersModal'); };
+      }
+    }, 0);
   }
 
   actions.innerHTML = actionsHTML;
@@ -3151,16 +3187,83 @@ async function deleteGroup(groupId) {
 function openAddMemberModal(groupId) {
   const group = myGroups.find(g => g.id === groupId);
   if (!group) return;
-  // Reuse groupMemberPicker từ createGroup modal nhưng dùng riêng
-  // Đơn giản: mở modal tạo group ở chế độ thêm thành viên
-  _addMemberGroupId = groupId;
-  document.getElementById('groupMemberSearch').value = '';
-  _selectedMembers = group.members.map(m => m.userId);
-  renderGroupMemberPicker();
+  window._addMemberGroupId = groupId;
+  document.getElementById('addMemberSearch').value = '';
+  renderAddMemberList();
   openModal('addMemberModal');
 }
 
+function renderAddMemberList() {
+  const group = myGroups.find(g => g.id === window._addMemberGroupId);
+  if (!group) return;
+  const keyword = document.getElementById('addMemberSearch').value.toLowerCase();
+  const existingIds = group.members.map(m => m.userId);
+  const available = allUsers.filter(u =>
+    !existingIds.includes(u.id) &&
+    (u.username.toLowerCase().includes(keyword) || !keyword)
+  );
+  const list = document.getElementById('addMemberList');
+  if (!available.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text2);padding:16px;font-size:0.85rem;">Không có user nào để thêm</div>';
+    return;
+  }
+  list.innerHTML = available.map(u => {
+    const color = u.color || '#c8d8ff';
+    const isOnline = onlineIds.includes(u.id);
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border-bottom:1px solid rgba(255,255,255,.04);">
+        <div style="position:relative;flex-shrink:0;">
+          <div style="width:36px;height:36px;border-radius:50%;background:${color}22;color:${color};border:2px solid ${color}44;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;overflow:hidden;">
+            ${u.avatar ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : escHtml(initials(u.username))}
+          </div>
+          <span style="position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;background:${isOnline ? '#00ff88' : '#444'};border:1px solid var(--panel);"></span>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:0.88rem;color:${color};">${escHtml(u.username)}</div>
+          <div style="font-size:0.72rem;color:var(--text2);">${isOnline ? 'Trực tuyến' : 'Ngoại tuyến'}</div>
+        </div>
+        <button onclick="addMemberToGroup('${u.id}','${escHtml(u.username)}')"
+          style="background:var(--cyan);color:#000;border:none;border-radius:8px;padding:5px 12px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">
+          + Thêm
+        </button>
+      </div>`;
+  }).join('');
+}
+
+async function addMemberToGroup(userId, username) {
+  const groupId = window._addMemberGroupId;
+  if (!groupId) return;
+  try {
+    const res = await fetch(`/api/groups/${groupId}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-token': token },
+      body: JSON.stringify({ userId })
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi thêm thành viên', 'error'); return; }
+    toast(`Đã thêm ${username}!`, 'success');
+    // Cập nhật local group
+    const group = myGroups.find(g => g.id === groupId);
+    if (group) group.members.push({ groupId, userId, role: 'member' });
+    renderAddMemberList(); // Refresh list
+  } catch { toast('Lỗi kết nối', 'error'); }
+}
+
 </script>
+
+<!-- ADD MEMBER MODAL -->
+<div class="modal-overlay" id="addMemberModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">➕ THÊM THÀNH VIÊN</span>
+      <button class="modal-close" onclick="closeModal('addMemberModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <input class="form-input" id="addMemberSearch" placeholder="🔍 Tìm user..." oninput="renderAddMemberList()" style="margin-bottom:10px;">
+      <div id="addMemberList" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:6px;"></div>
+    </div>
+  </div>
+</div>
 
 <div class="lightbox" id="lightbox">
   <div id="lightboxBg" onclick="closeLightbox()" style="position:absolute;inset:0;"></div>
