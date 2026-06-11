@@ -247,7 +247,7 @@ body::after {
    MAIN CHAT SCREEN
 ──────────────────────────────────── */
 #chatScreen {
-  height: var(--app-height);
+  height: 100dvh;
   flex-direction: column;
   overflow: hidden;
 }
@@ -1290,12 +1290,12 @@ select.form-input option { background: #0b0f1e; }
     <div id="loginForm">
       <div class="form-group">
         <label class="form-label">Email <span style="font-size:0.8rem;color:var(--text2)">(admin/owner dùng tên tài khoản)</span></label>
-        <input class="form-input" id="loginEmail" type="text" placeholder="Email hoặc tên tài khoản..." autocomplete="email" autocorrect="off" autocapitalize="none">
+        <input class="form-input" id="loginEmail" type="text" placeholder="Email hoặc tên tài khoản..." required autocomplete="email" autocorrect="off" autocapitalize="none">
       </div>
       <div class="form-group">
         <label class="form-label">Mật khẩu</label>
         <div style="position:relative;">
-          <input class="form-input" id="loginPass" type="password" placeholder="Nhập mật khẩu..." autocomplete="current-password" style="padding-right:42px;">
+          <input class="form-input" id="loginPass" type="password" placeholder="Nhập mật khẩu..." required autocomplete="current-password" style="padding-right:42px;">
           <button type="button" onclick="togglePass('loginPass','loginPassEye')" id="loginPassEye"
             style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem;padding:0;line-height:1;">👁</button>
         </div>
@@ -1310,16 +1310,16 @@ select.form-input option { background: #0b0f1e; }
     <div id="registerForm" style="display:none">
       <div class="form-group">
         <label class="form-label">Email</label>
-        <input class="form-input" id="regEmail" type="email" placeholder="Nhập email..." autocorrect="off" autocapitalize="none">
+        <input class="form-input" id="regEmail" type="email" placeholder="Nhập email..." required autocorrect="off" autocapitalize="none">
       </div>
       <div class="form-group">
         <label class="form-label">Tên hiển thị</label>
-        <input class="form-input" id="regUser" type="text" placeholder="Tên của bạn (2-32 ký tự)">
+        <input class="form-input" id="regUser" type="text" placeholder="Tên của bạn (2-32 ký tự)" required>
       </div>
       <div class="form-group">
         <label class="form-label">Mật khẩu</label>
         <div style="position:relative;">
-          <input class="form-input" id="regPass" type="password" placeholder="Tối thiểu 4 ký tự" style="padding-right:42px;">
+          <input class="form-input" id="regPass" type="password" placeholder="Tối thiểu 4 ký tự" required style="padding-right:42px;">
           <button type="button" onclick="togglePass('regPass','regPassEye')" id="regPassEye"
             style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem;padding:0;line-height:1;">👁</button>
         </div>
@@ -1416,7 +1416,7 @@ select.form-input option { background: #0b0f1e; }
           <button onclick="cancelImagePreview()" style="background:none;border:none;color:var(--pink);font-size:1.2rem;cursor:pointer;">✕</button>
           <button onclick="confirmSendImage()" style="background:var(--cyan);color:#000;border:none;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Gửi ➤</button>
         </div>
-        <div class="input-wrap">
+        <form id="chatForm" class="input-wrap" onsubmit="event.preventDefault();sendMessage();">
           <textarea id="msgInput" placeholder="Nhắn tin..." rows="1" maxlength="2000"></textarea>
           <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="previewImage(this)">
           <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="uploadMedia(this,'video')">
@@ -1442,7 +1442,7 @@ select.form-input option { background: #0b0f1e; }
             </div>
           </div>
     <button class="send-btn" onclick="sendMessage()">➤</button>
-        </div>
+        </form>
       </div>
     </div>
   </div>
@@ -2381,21 +2381,6 @@ function toggleAttachMenu() {
   }
 }
 
-function toggleAttachMenu() {
-  const menu = document.getElementById('attachMenu');
-  const isHidden = menu.style.display === 'none';
-  menu.style.display = isHidden ? 'block' : 'none';
-  if (isHidden) {
-    setTimeout(() => document.addEventListener('click', function closeAttach(e) {
-      if (!document.getElementById('attachBtn')?.contains(e.target) &&
-          !document.getElementById('attachMenu')?.contains(e.target)) {
-        const m = document.getElementById('attachMenu');
-        if (m) m.style.display = 'none';
-        document.removeEventListener('click', closeAttach);
-      }
-    }), 0);
-  }
-}
 
 function toggleGroupMenu() {
   const menu = document.getElementById('groupAddMenu');
@@ -2424,7 +2409,8 @@ async function renderFindGroupResults() {
   const res = await fetch(`/api/groups/search?q=${encodeURIComponent(keyword)}`, {
     headers: { 'x-token': token }
   });
-  if (!res.ok) return;
+  try {
+    if (!res.ok) { console.error('Search groups failed:', res.status); return; }
   const list = await res.json();
   const el = document.getElementById('findGroupResults');
   if (!list.length) {
@@ -2445,8 +2431,8 @@ async function renderFindGroupResults() {
         : `<button onclick="joinGroup('${g.id}')" style="background:var(--cyan);color:#000;border:none;border-radius:8px;padding:5px 12px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Tham gia</button>`
       }
     </div>`).join('');
+  } catch(e) { console.error('renderFindGroupResults:', e); }
 }
-
 async function joinGroup(groupId) {
   try {
     const res = await fetch(`/api/groups/${groupId}/join`, {
