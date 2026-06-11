@@ -2313,6 +2313,23 @@ function openCreateGroup() {
 
 // ── File/Video Upload ────────────────────────
 
+async function downloadFile(key, name) {
+  if (!key) return;
+  try {
+    toast('Đang lấy link tải...', 'info', 3000);
+    const res = await fetch(`/api/file/${encodeURIComponent(key)}`, {
+      headers: { 'x-token': token }
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi lấy link', 'error'); return; }
+    const a = document.createElement('a');
+    a.href = data.url;
+    a.download = name;
+    a.target = '_blank';
+    a.click();
+  } catch { toast('Lỗi kết nối', 'error'); }
+}
+
 function fmtSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
@@ -2419,7 +2436,7 @@ function renderFileMsg(msg) {
   const icon = getFileIcon(msg.fileMime);
   const size = fmtSize(msg.fileSize || 0);
   if (expired) return `<div class="msg-file msg-file-expired"><span class="msg-file-icon">${icon}</span><div class="msg-file-info"><div class="msg-file-name">${escHtml(msg.fileName||'File')}</div><div class="msg-file-size">⏰ Đã hết hạn (${size})</div></div></div>`;
-  return `<a class="msg-file" href="${escHtml(msg.fileUrl||'')}" target="_blank" download="${escHtml(msg.fileName||'file')}"><span class="msg-file-icon">${icon}</span><div class="msg-file-info"><div class="msg-file-name">${escHtml(msg.fileName||'File')}</div><div class="msg-file-size">${size}</div></div><span style="margin-left:auto;color:var(--cyan);font-size:0.8rem;">⬇</span></a>`;
+  return `<div class="msg-file" onclick="downloadFile('${escHtml(msg.fileKey||'')}','${escHtml(msg.fileName||'file')}')"><span class="msg-file-icon">${icon}</span><div class="msg-file-info"><div class="msg-file-name">${escHtml(msg.fileName||'File')}</div><div class="msg-file-size">${size}</div></div><span style="margin-left:auto;color:var(--cyan);font-size:0.8rem;">⬇</span></div>`;
 }
 
 function previewGroupAvatar(input) {
