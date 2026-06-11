@@ -11,7 +11,7 @@ const { uploadFile, getPresignedUrl, deleteFile } = require('./b2');
 const multer = require('multer');
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 1024 * 1024 * 1024 } // 1GB
+  limits: { fileSize: 200 * 1024 * 1024 } // 200MB max
 });
 const http = require('http');
 const socketIo = require('socket.io');
@@ -164,7 +164,8 @@ function broadcastOnline() {
 
 // ─── Express Middleware ───────────────────────────────────────────────────────
 
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '200mb' }));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE');
@@ -346,7 +347,11 @@ app.put('/api/users/:id', requireAuth, (req, res) => {
 
 // ── File Upload API ──────────────────────────
 
-app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => {
+app.post('/api/upload', requireAuth, (req, res, next) => {
+  req.setTimeout(300000); // 5 phút timeout
+  res.setTimeout(300000);
+  next();
+}, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
   const file = req.file;
   const ext = file.originalname.split('.').pop().toLowerCase();
