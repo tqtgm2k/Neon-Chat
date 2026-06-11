@@ -50,19 +50,6 @@ async function initDB() {
     await conn.execute('ALTER TABLE group_messages ADD COLUMN fileExpires DATETIME AFTER fileMime');
   } catch(e) {}
 
-  // Thêm cột cover photo
-  try {
-    await conn.execute("ALTER TABLE users ADD COLUMN cover MEDIUMTEXT AFTER avatar");
-  } catch(e) {}
-  // Thêm cột socials (JSON)
-  try {
-    await conn.execute("ALTER TABLE users ADD COLUMN socials VARCHAR(500) DEFAULT '{}' AFTER cover");
-  } catch(e) {}
-  // Thêm cột msgCount
-  try {
-    await conn.execute("ALTER TABLE users ADD COLUMN msgCount INT DEFAULT 0 AFTER socials");
-  } catch(e) {}
-
   // Thêm cột loginName nếu chưa có
   try {
     await conn.execute("ALTER TABLE users ADD COLUMN loginName VARCHAR(32) AFTER email");

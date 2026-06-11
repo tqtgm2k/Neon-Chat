@@ -117,14 +117,13 @@ async function saveUsers() {
   if (!dbReady) { try { fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2)); } catch(e){} return; }
   for (const u of users) {
     await pool.execute(`
-      INSERT INTO users (id, email, loginName, username, password, color, bio, role, badge, avatar, cover, socials, msgCount, banned)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      INSERT INTO users (id, email, loginName, username, password, color, bio, role, badge, avatar, banned)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)
       ON DUPLICATE KEY UPDATE
         email=VALUES(email), loginName=VALUES(loginName), username=VALUES(username),
         password=VALUES(password), color=VALUES(color), bio=VALUES(bio),
-        role=VALUES(role), badge=VALUES(badge), avatar=VALUES(avatar),
-        cover=VALUES(cover), socials=VALUES(socials), msgCount=VALUES(msgCount), banned=VALUES(banned)
-    `, [u.id, u.email||null, u.loginName||null, u.username, u.password, u.color||'#00f5ff', u.bio||'', u.role||'user', u.badge||'', u.avatar||null, u.cover||null, JSON.stringify(u.socials||{}), u.msgCount||0, u.banned?1:0]);
+        role=VALUES(role), badge=VALUES(badge), avatar=VALUES(avatar), banned=VALUES(banned)
+    `, [u.id, u.email||null, u.loginName||null, u.username, u.password, u.color||'#00f5ff', u.bio||'', u.role||'user', u.badge||'', u.avatar||null, u.banned?1:0]);
   }
 }
 
@@ -141,22 +140,16 @@ async function saveMessages() {
 
 function publicUser(u) {
   const isOnline = [...onlineSockets.values()].includes(u.id);
-  let socials = {};
-  try { socials = typeof u.socials === 'string' ? JSON.parse(u.socials) : (u.socials || {}); } catch(e) {}
   return {
     id: u.id,
     username: u.username,
     avatar: u.avatar || null,
-    cover: u.cover || null,
     role: u.role,
     color: u.color,
     bio: u.bio || '',
     badge: u.badge || '',
     banned: u.banned || false,
-    online: isOnline,
-    createdAt: u.createdAt || null,
-    socials: socials,
-    msgCount: u.msgCount || 0
+    online: isOnline
   };
 }
 
@@ -271,7 +264,7 @@ app.get('/api/users', requireAuth, (req, res) => {
 
 // Update own profile
 app.put('/api/profile', requireAuth, (req, res) => {
-  const { color, bio, badge, cover, socials, newPassword, currentPassword, newUsername } = req.body || {};
+  const { color, bio, badge, newPassword, currentPassword, newUsername } = req.body || {};
 
   const idx = users.findIndex(u => u.id === req.user.id);
   if (idx === -1) return res.status(404).json({ error: 'User not found' });
@@ -289,8 +282,6 @@ app.put('/api/profile', requireAuth, (req, res) => {
   if (color && /^#[0-9a-fA-F]{6}$/.test(color)) users[idx].color = color;
   if (bio !== undefined) users[idx].bio = String(bio).slice(0, 100);
   if (badge !== undefined) users[idx].badge = String(badge).slice(0, 20);
-  if (cover !== undefined) users[idx].cover = cover || null;
-  if (socials !== undefined) users[idx].socials = socials;
 
   if (newPassword) {
     if (!currentPassword) return res.status(400).json({ error: 'Current password required' });

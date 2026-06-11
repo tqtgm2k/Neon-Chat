@@ -304,7 +304,7 @@ body::after {
   0%, 100% { opacity: 1; }
   50% { opacity: .3; }
 }
-.header-spacer { flex: 1; }
+.header-spacer { flex: 0; }
 .header-online {
   font-size: 0.82rem;
   color: var(--text2);
