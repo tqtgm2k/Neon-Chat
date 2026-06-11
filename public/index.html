@@ -2635,12 +2635,7 @@ function showMsgPopup(touch, msg, canDelete) {
   }
 
   if (canDelete) {
-    if (items.length) {
-      const sep = document.createElement('div');
-      sep.className = 'msg-popup-sep';
-      popup.appendChild(sep);
-    }
-    items.push({ icon: '🗑', label: isImage ? 'Xóa ảnh' : 'Xóa tin nhắn', danger: true, action: () => {
+    items.push({ icon: '🗑', label: isImage ? 'Xóa ảnh' : 'Xóa tin nhắn', danger: true, sep: true, action: () => {
       closeMsgPopup();
       if (currentGroupId) {
         socket.emit('delete_group_message', { groupId: currentGroupId, messageId: msg.id, token });
@@ -2650,7 +2645,12 @@ function showMsgPopup(touch, msg, canDelete) {
     }});
   }
 
-  items.forEach(item => {
+  items.forEach((item, idx) => {
+    if (item.sep && idx > 0) {
+      const sep = document.createElement('div');
+      sep.className = 'msg-popup-sep';
+      popup.appendChild(sep);
+    }
     const btn = document.createElement('button');
     btn.className = 'msg-popup-item' + (item.danger ? ' danger' : '');
     btn.innerHTML = `<span>${item.icon}</span>${item.label}`;
