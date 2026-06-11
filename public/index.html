@@ -2957,6 +2957,8 @@ async function openGroupMembers(groupId) {
   const effectiveAdmin = isGroupAdmin || isSysAdmin || isSysOwner;
 
   const list = document.getElementById('membersList');
+  const groupAdminCount = group.members.filter(m => m.role === 'admin').length;
+
   // Sắp xếp admin lên trên
   const sorted = [...group.members].sort((a,b) => a.role === 'admin' ? -1 : 1);
   list.innerHTML = sorted.map(m => {
@@ -2964,17 +2966,48 @@ async function openGroupMembers(groupId) {
     const isOnline = onlineIds.includes(m.userId);
     const displayName = u.username || m.userId;
     const color = u.color || '#00f5ff';
-    const isSelf = m.userId === (window.me && window.me.id);
-    const roleLabel = m.role === 'admin' ? '⭐ Admin' : '👤 Thành viên';
-    const sysRole = u.role === 'owner' ? '👑' : u.role === 'admin' ? '🛡️' : '';
+    const isSelf = m.userId === me.id;
+    const isGroupAdminMember = m.role === 'admin';
+    const targetSysRole = u.role || 'user';
+    const isTargetSysOwner = targetSysRole === 'owner';
+    const isTargetSysAdmin = targetSysRole === 'admin';
+
+    // Label ưu tiên sys role > group role
+    let roleLabel = '👤 Thành viên';
+    let roleColor = 'var(--text2)';
+    if (isTargetSysOwner) { roleLabel = '👑 Owner'; roleColor = '#ff00ff'; }
+    else if (isTargetSysAdmin) { roleLabel = '🛡️ Admin'; roleColor = '#00f5ff'; }
+    else if (isGroupAdminMember) { roleLabel = '⭐ Admin nhóm'; roleColor = '#ffaa00'; }
+
     const avatarHtml = u.avatar
       ? `<img src="${u.avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`
       : `<div style="width:36px;height:36px;border-radius:50%;background:${color}22;color:${color};border:2px solid ${color}44;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;">${displayName.charAt(0).toUpperCase()}</div>`;
 
-    const kickBtn = isGroupAdmin && !isSelf
-      ? `<button onclick="kickGroupMember('${groupId}','${m.userId}','${escHtml(displayName)}')"
-          style="background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:6px;padding:4px 10px;font-size:0.75rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:600;">Kick</button>`
-      : '';
+    let actionBtns = '';
+    if (!isSelf) {
+      // Kick: group admin không kick được sys owner/admin
+      const groupAdminCanKick = isGroupAdmin && !isTargetSysOwner && !isTargetSysAdmin;
+      const sysCanKick = isSysOwner || (isSysAdmin && !isTargetSysOwner);
+      const canKick = groupAdminCanKick || sysCanKick;
+
+      // Promote: group admin, sys admin, owner - không promote sys owner/admin
+      const canPromote = !isGroupAdminMember && !isTargetSysOwner && !isTargetSysAdmin
+        && (isGroupAdmin || isSysAdmin || isSysOwner);
+
+      // Demote: chỉ sys admin và owner
+      const canDemote = isGroupAdminMember && !isTargetSysOwner && !isTargetSysAdmin
+        && (isSysAdmin || isSysOwner);
+
+      if (canPromote)
+        actionBtns += `<button onclick="promoteGroupMember('${groupId}','${m.userId}','${escHtml(displayName)}')"
+          style="background:rgba(0,245,255,.1);border:1px solid rgba(0,245,255,.3);color:var(--cyan);border-radius:6px;padding:4px 8px;font-size:0.72rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:600;">⬆ Admin</button>`;
+      if (canDemote)
+        actionBtns += `<button onclick="demoteGroupMember('${groupId}','${m.userId}','${escHtml(displayName)}')"
+          style="background:rgba(255,170,0,.1);border:1px solid rgba(255,170,0,.3);color:#ffaa00;border-radius:6px;padding:4px 8px;font-size:0.72rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:600;">⬇ Member</button>`;
+      if (canKick)
+        actionBtns += `<button onclick="kickGroupMember('${groupId}','${m.userId}','${escHtml(displayName)}')"
+          style="background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.3);color:#ff4444;border-radius:6px;padding:4px 8px;font-size:0.72rem;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:600;">Kick</button>`;
+    }
 
     return `
       <div class="member-row">
@@ -2983,10 +3016,10 @@ async function openGroupMembers(groupId) {
           <span class="member-status-dot ${isOnline ? 'online' : 'offline'}" style="position:absolute;bottom:1px;right:1px;"></span>
         </div>
         <div class="member-name-wrap">
-          <div class="member-uname" style="color:${color};">${escHtml(displayName)} ${sysRole} ${isSelf ? '<span style="color:var(--text2);font-size:0.72rem;">(Bạn)</span>' : ''}</div>
-          <div class="member-role-tag">${roleLabel} ${isOnline ? '• <span style="color:#00ff88;">Online</span>' : '• Offline'}</div>
+          <div class="member-uname" style="color:${color};">${escHtml(displayName)} ${isSelf ? '<span style="color:var(--text2);font-size:0.72rem;">(Bạn)</span>' : ''}</div>
+          <div class="member-role-tag" style="color:${roleColor};">${roleLabel} ${isOnline ? '• <span style="color:#00ff88;">Online</span>' : '• Offline'}</div>
         </div>
-        ${kickBtn}
+        <div style="display:flex;gap:4px;flex-shrink:0;">${actionBtns}</div>
       </div>`;
   }).join('');
 
