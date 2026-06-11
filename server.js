@@ -7,6 +7,12 @@
 
 const express = require('express');
 const { pool, initDB } = require('./db');
+const { uploadFile, getPresignedUrl, deleteFile } = require('./b2');
+const multer = require('multer');
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 1024 * 1024 * 1024 } // 1GB
+});
 const http = require('http');
 const socketIo = require('socket.io');
 const fs = require('fs');
@@ -159,6 +165,12 @@ function broadcastOnline() {
 // ─── Express Middleware ───────────────────────────────────────────────────────
 
 app.use(express.json({ limit: '1mb' }));
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,x-token');
+  next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 function requireAuth(req, res, next) {
@@ -330,6 +342,52 @@ app.put('/api/users/:id', requireAuth, (req, res) => {
   }
 
   res.json({ success: true, user: publicUser(users[idx]) });
+});
+
+// ── File Upload API ──────────────────────────
+
+app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file' });
+  const file = req.file;
+  const ext = file.originalname.split('.').pop().toLowerCase();
+  const isVideo = ['mp4','webm','mov','avi','mkv'].includes(ext);
+  const isFile = !isVideo && !['jpg','jpeg','png','gif','webp'].includes(ext);
+
+  // Giới hạn kích thước
+  const maxSize = isVideo ? 200 * 1024 * 1024 : isFile ? 1024 * 1024 * 1024 : 10 * 1024 * 1024;
+  if (file.size > maxSize) {
+    return res.status(400).json({ error: isVideo ? 'Video tối đa 200MB' : isFile ? 'File tối đa 1GB' : 'Ảnh tối đa 10MB' });
+  }
+
+  const key = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const type = isVideo ? 'video' : isFile ? 'file' : 'image';
+
+  try {
+    await uploadFile(key, file.buffer, file.mimetype);
+    const url = await getPresignedUrl(key);
+    res.json({
+      key,
+      url,
+      type,
+      name: file.originalname,
+      size: file.size,
+      mime: file.mimetype,
+      expiresAt: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString()
+    });
+  } catch(e) {
+    console.error('B2 upload error:', e);
+    res.status(500).json({ error: 'Lỗi upload file' });
+  }
+});
+
+// Lấy presigned URL mới cho file
+app.get('/api/file/:key', requireAuth, async (req, res) => {
+  try {
+    const url = await getPresignedUrl(decodeURIComponent(req.params.key));
+    res.json({ url });
+  } catch(e) {
+    res.status(404).json({ error: 'File không tồn tại hoặc đã hết hạn' });
+  }
 });
 
 // ── Group API ────────────────────────────────
@@ -559,28 +617,39 @@ io.on('connection', (socket) => {
     broadcastUsers();
   });
 
-  socket.on('send_message', ({ content, token, type, imageData }) => {
+  socket.on('send_message', ({ content, token, type, imageData, fileKey, fileUrl, fileName, fileSize, fileMime, fileExpires }) => {
     const payload = verifyToken(token);
     if (!payload) return;
     const user = users.find(u => u.id === payload.userId);
     if (!user || user.banned) return;
 
-    const msgType = type === 'image' ? 'image' : 'text';
+    const msgType = ['image','video','file'].includes(type) ? type : 'text';
 
     if (msgType === 'image') {
       if (!imageData || !imageData.startsWith('data:image/')) return;
-      if (imageData.length > 3 * 1024 * 1024) return; // giới hạn 3MB
+      if (imageData.length > 3 * 1024 * 1024) return;
       const msg = {
         id: Date.now().toString() + Math.random().toString(36).slice(2,6),
-        userId: user.id,
-        username: user.username,
-        color: user.color,
-        role: user.role,
-        badge: user.badge || '',
-        type: 'image',
-        content: '',
-        imageData: imageData,
-        avatar: user.avatar || null,
+        userId: user.id, username: user.username, color: user.color,
+        role: user.role, badge: user.badge || '', type: 'image',
+        content: '', imageData, avatar: user.avatar || null,
+        timestamp: new Date().toISOString()
+      };
+      messages.push(msg);
+      if (messages.length > 1000) messages.splice(0, 100);
+      saveMessages();
+      io.emit('new_message', msg);
+      return;
+    }
+
+    if (msgType === 'video' || msgType === 'file') {
+      if (!fileKey) return;
+      const msg = {
+        id: Date.now().toString() + Math.random().toString(36).slice(2,6),
+        userId: user.id, username: user.username, color: user.color,
+        role: user.role, badge: user.badge || '', type: msgType,
+        content: '', fileKey, fileUrl, fileName, fileSize, fileMime,
+        fileExpires, avatar: user.avatar || null,
         timestamp: new Date().toISOString()
       };
       messages.push(msg);
@@ -592,17 +661,11 @@ io.on('connection', (socket) => {
 
     const text = String(content || '').trim();
     if (!text || text.length > 2000) return;
-
     const msg = {
       id: Date.now().toString() + Math.random().toString(36).slice(2,6),
-      userId: user.id,
-      username: user.username,
-      color: user.color,
-      role: user.role,
-      badge: user.badge || '',
-      type: 'text',
-      content: text,
-      avatar: user.avatar || null,
+      userId: user.id, username: user.username, color: user.color,
+      role: user.role, badge: user.badge || '', type: 'text',
+      content: text, avatar: user.avatar || null,
       timestamp: new Date().toISOString()
     };
     messages.push(msg);

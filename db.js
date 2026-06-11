@@ -34,6 +34,22 @@ async function initDB() {
   try {
     await conn.execute('ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT AFTER badge');
   } catch(e) {}
+  // Thêm cột file fields nếu chưa có
+  try {
+    await conn.execute('ALTER TABLE messages ADD COLUMN fileKey VARCHAR(255) AFTER imageData');
+    await conn.execute('ALTER TABLE messages ADD COLUMN fileName VARCHAR(255) AFTER fileKey');
+    await conn.execute('ALTER TABLE messages ADD COLUMN fileSize BIGINT AFTER fileName');
+    await conn.execute('ALTER TABLE messages ADD COLUMN fileMime VARCHAR(100) AFTER fileSize');
+    await conn.execute('ALTER TABLE messages ADD COLUMN fileExpires DATETIME AFTER fileMime');
+  } catch(e) {}
+  try {
+    await conn.execute('ALTER TABLE group_messages ADD COLUMN fileKey VARCHAR(255) AFTER imageData');
+    await conn.execute('ALTER TABLE group_messages ADD COLUMN fileName VARCHAR(255) AFTER fileKey');
+    await conn.execute('ALTER TABLE group_messages ADD COLUMN fileSize BIGINT AFTER fileName');
+    await conn.execute('ALTER TABLE group_messages ADD COLUMN fileMime VARCHAR(100) AFTER fileSize');
+    await conn.execute('ALTER TABLE group_messages ADD COLUMN fileExpires DATETIME AFTER fileMime');
+  } catch(e) {}
+
   // Thêm cột loginName nếu chưa có
   try {
     await conn.execute("ALTER TABLE users ADD COLUMN loginName VARCHAR(32) AFTER email");

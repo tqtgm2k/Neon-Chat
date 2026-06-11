@@ -1002,6 +1002,37 @@ select.form-input option { background: #0b0f1e; }
 }
 .msg-image:hover { opacity: .85; }
 
+.msg-video {
+  max-width: 300px;
+  max-height: 300px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  display: block;
+  margin-top: 4px;
+  background: #000;
+}
+.msg-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(0,245,255,.06);
+  border: 1px solid rgba(0,245,255,.2);
+  border-radius: 10px;
+  margin-top: 4px;
+  cursor: pointer;
+  transition: background .15s;
+  max-width: 280px;
+  text-decoration: none;
+}
+.msg-file:hover { background: rgba(0,245,255,.12); }
+.msg-file-icon { font-size: 1.5rem; flex-shrink: 0; }
+.msg-file-info { min-width: 0; }
+.msg-file-name { font-weight: 700; font-size: 0.85rem; color: var(--cyan); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.msg-file-size { font-size: 0.72rem; color: var(--text2); margin-top: 2px; }
+.msg-file-expired { opacity: .5; cursor: not-allowed; border-color: var(--border); }
+.msg-file-expired .msg-file-name { color: var(--text2); }
+
 .lightbox {
   display: none;
   position: fixed;
@@ -1280,7 +1311,11 @@ select.form-input option { background: #0b0f1e; }
         <div class="input-wrap">
           <textarea id="msgInput" placeholder="Nhắn tin..." rows="1" maxlength="2000"></textarea>
           <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="previewImage(this)">
+          <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="uploadMedia(this,'video')">
+          <input type="file" id="fileInput" accept="*/*" style="display:none" onchange="uploadMedia(this,'file')">
     <button class="img-upload-btn" onclick="document.getElementById('imageInput').click()" title="Gửi ảnh">🖼</button>
+    <button class="img-upload-btn" onclick="document.getElementById('videoInput').click()" title="Gửi video">🎬</button>
+    <button class="img-upload-btn" onclick="document.getElementById('fileInput').click()" title="Gửi file">📎</button>
     <button class="send-btn" onclick="sendMessage()">➤</button>
         </div>
       </div>
@@ -1852,7 +1887,11 @@ function appendMessage(msg, animate = true) {
         ${badgeLabel ? `<span class="msg-badge ${badgeClass}">${escHtml(badgeLabel)}</span>` : ''}
         <span class="msg-time">${fmtTime(msg.timestamp)}</span>
       </div>
-      <div class="msg-content">${isImage ? `<img class="msg-image" src="${msg.imageData}" onclick="openImage(this.src)" oncontextmenu="return false;" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">` : linkify(msg.content)}</div>
+      <div class="msg-content">${
+        isImage ? `<img class="msg-image" src="${msg.imageData}" onclick="openImage(this.src)" oncontextmenu="return false;" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">`
+        : (msg.type === 'video' || msg.type === 'file') ? renderFileMsg(msg)
+        : linkify(msg.content)
+      }</div>
     </div>
     <div class="msg-actions">
       ${!isImage ? `<button class="msg-action-btn" onclick="copyMsgText(this)" title="Sao chép">📋</button>` : ''}
@@ -2270,6 +2309,90 @@ function openCreateGroup() {
   document.getElementById('selectedMemberCount').textContent = '(0/100)';
   renderGroupMemberPicker();
   openModal('createGroupModal');
+}
+
+// ── File/Video Upload ────────────────────────
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  if (bytes < 1024*1024*1024) return (bytes/1024/1024).toFixed(1) + ' MB';
+  return (bytes/1024/1024/1024).toFixed(2) + ' GB';
+}
+
+function getFileIcon(mime) {
+  if (!mime) return '📄';
+  if (mime.startsWith('video/')) return '🎬';
+  if (mime.startsWith('audio/')) return '🎵';
+  if (mime.includes('pdf')) return '📕';
+  if (mime.includes('zip') || mime.includes('rar') || mime.includes('7z')) return '📦';
+  if (mime.includes('word') || mime.includes('doc')) return '📝';
+  if (mime.includes('excel') || mime.includes('sheet')) return '📊';
+  if (mime.includes('powerpoint') || mime.includes('presentation')) return '📊';
+  return '📄';
+}
+
+async function uploadMedia(input, type) {
+  const file = input.files[0];
+  if (!file || !socket) { input.value = ''; return; }
+
+  const maxSize = type === 'video' ? 200*1024*1024 : 1024*1024*1024;
+  if (file.size > maxSize) {
+    toast(type === 'video' ? 'Video tối đa 200MB!' : 'File tối đa 1GB!', 'error');
+    input.value = ''; return;
+  }
+
+  // Hiện progress toast
+  toast(`Đang upload ${type === 'video' ? 'video' : 'file'}...`, 'info', 30000);
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'x-token': token },
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Lỗi upload', 'error'); input.value = ''; return; }
+
+    // Gửi tin nhắn với thông tin file
+    const msgData = {
+      token,
+      type: data.type,
+      fileKey: data.key,
+      fileUrl: data.url,
+      fileName: data.name,
+      fileSize: data.size,
+      fileMime: data.mime,
+      fileExpires: data.expiresAt,
+      content: ''
+    };
+
+    if (currentGroupId) {
+      socket.emit('send_group_message', { ...msgData, groupId: currentGroupId });
+    } else {
+      socket.emit('send_message', msgData);
+    }
+
+    toast(`Đã gửi ${type === 'video' ? 'video' : 'file'} thành công!`, 'success', 2000);
+  } catch(e) {
+    toast('Lỗi kết nối', 'error');
+  }
+  input.value = '';
+}
+
+function renderFileMsg(msg) {
+  const expired = msg.fileExpires && new Date(msg.fileExpires) < new Date();
+  if (msg.type === 'video') {
+    if (expired) return `<div class="msg-file msg-file-expired"><span class="msg-file-icon">🎬</span><div class="msg-file-info"><div class="msg-file-name">${escHtml(msg.fileName||'Video')}</div><div class="msg-file-size">⏰ Đã hết hạn</div></div></div>`;
+    return `<video class="msg-video" controls preload="metadata" src="${escHtml(msg.fileUrl||'')}"></video>`;
+  }
+  const icon = getFileIcon(msg.fileMime);
+  const size = fmtSize(msg.fileSize || 0);
+  if (expired) return `<div class="msg-file msg-file-expired"><span class="msg-file-icon">${icon}</span><div class="msg-file-info"><div class="msg-file-name">${escHtml(msg.fileName||'File')}</div><div class="msg-file-size">⏰ Đã hết hạn (${size})</div></div></div>`;
+  return `<a class="msg-file" href="${escHtml(msg.fileUrl||'')}" target="_blank" download="${escHtml(msg.fileName||'file')}"><span class="msg-file-icon">${icon}</span><div class="msg-file-info"><div class="msg-file-name">${escHtml(msg.fileName||'File')}</div><div class="msg-file-size">${size}</div></div><span style="margin-left:auto;color:var(--cyan);font-size:0.8rem;">⬇</span></a>`;
 }
 
 function previewGroupAvatar(input) {
