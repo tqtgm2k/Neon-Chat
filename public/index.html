@@ -2672,9 +2672,15 @@ function showMsgPopup(touch, msg, canDelete) {
   popup.style.top = y + 'px';
 
   setTimeout(() => {
-    document.addEventListener('touchstart', closeMsgPopup, { once: true });
-    document.addEventListener('click', closeMsgPopup, { once: true });
-  }, 0);
+    document.addEventListener('touchstart', (e) => {
+      if (!_msgPopupEl || _msgPopupEl.contains(e.target)) return;
+      closeMsgPopup();
+    }, { once: true });
+    document.addEventListener('click', (e) => {
+      if (!_msgPopupEl || _msgPopupEl.contains(e.target)) return;
+      closeMsgPopup();
+    }, { once: true });
+  }, 100);
 }
 
 async function copyMessage(btn) {
