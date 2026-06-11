@@ -2353,11 +2353,25 @@ async function uploadMedia(input, type) {
     const result = await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.timeout = 300000; // 5 phút
+      let _progressToast = null;
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           const pct = Math.round(e.loaded / e.total * 100);
-          toast(`Đang upload... ${pct}%`, 'info', 30000);
+          // Cập nhật toast hiện có thay vì tạo mới
+          const existing = document.querySelector('.toast-progress');
+          if (existing) {
+            existing.textContent = `⬆ Đang upload... ${pct}%`;
+          } else {
+            const t = document.createElement('div');
+            t.className = 'toast toast-progress show';
+            t.textContent = `⬆ Đang upload... ${pct}%`;
+            t.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:9999;background:var(--panel);border:1px solid var(--cyan);color:var(--cyan);padding:10px 16px;border-radius:10px;font-family:Rajdhani,sans-serif;font-weight:700;';
+            document.body.appendChild(t);
+          }
         }
+      };
+      xhr.onloadend = () => {
+        document.querySelector('.toast-progress')?.remove();
       };
       xhr.onload = () => resolve({ ok: xhr.status < 400, json: () => JSON.parse(xhr.responseText) });
       xhr.onerror = () => reject(new Error('Network error'));
