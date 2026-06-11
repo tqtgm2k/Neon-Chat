@@ -2316,18 +2316,30 @@ function openCreateGroup() {
 async function downloadFile(key, name) {
   if (!key) return;
   try {
-    toast('Đang lấy link tải...', 'info', 3000);
+    toast('Đang tải file...', 'info', 30000);
+    // Lấy presigned URL từ server
     const res = await fetch(`/api/file/${encodeURIComponent(key)}`, {
       headers: { 'x-token': token }
     });
     const data = await res.json();
     if (!res.ok) { toast(data.error || 'Lỗi lấy link', 'error'); return; }
+
+    // Fetch file về dưới dạng blob
+    const fileRes = await fetch(data.url);
+    if (!fileRes.ok) { toast('File không tồn tại hoặc đã hết hạn', 'error'); return; }
+    const blob = await fileRes.blob();
+
+    // Tạo blob URL và download
+    const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = data.url;
-    a.download = name;
-    a.target = '_blank';
+    a.href = blobUrl;
+    a.download = name || 'file';
+    document.body.appendChild(a);
     a.click();
-  } catch { toast('Lỗi kết nối', 'error'); }
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    toast('Đã tải xong!', 'success', 2000);
+  } catch(e) { toast('Lỗi tải file: ' + e.message, 'error'); }
 }
 
 function fmtSize(bytes) {
