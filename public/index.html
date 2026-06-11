@@ -291,7 +291,7 @@ body::after {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  flex-shrink: 1;
+  flex-shrink: 0;
 }
 .header-logo .logo-dot {
   width: 8px; height: 8px;
@@ -2325,6 +2325,9 @@ async function openGroupChat(groupId) {
           title="Đóng">✕</button>
       </div>
     </div>`;
+  document.querySelector(".header-spacer").style.display = "none";
+  document.querySelector(".header-online").style.display = "none";
+  document.querySelector(".header-actions").style.display = "none";
   const _gc = document.getElementById('messages');
   _gc.innerHTML = '<div class="msg-system">⚡ ' + escHtml(group.name) + '</div>';
   try {
@@ -2344,6 +2347,9 @@ function backToMain() {
   currentGroupId = null;
   sessionStorage.removeItem('currentGroupId');
   document.querySelector('.header-logo').innerHTML = `<div class="logo-dot"></div> NEON CHAT`;
+  document.querySelector('.header-spacer').style.display = '';
+  document.querySelector('.header-online').style.display = '';
+  document.querySelector('.header-actions').style.display = '';
   const container = document.getElementById('messages');
   container.innerHTML = '<div class="msg-system">⚡ Chào mừng đến Neon Chat!</div>';
   // Load lại tin nhắn chính
