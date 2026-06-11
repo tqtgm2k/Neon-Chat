@@ -453,7 +453,9 @@ body::after {
   background:
     radial-gradient(ellipse at 20% 0%, rgba(0,245,255,.03) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 100%, rgba(191,0,255,.03) 0%, transparent 60%);
+  scrollbar-width: none;
 }
+.messages-container::-webkit-scrollbar { display: none; }
 
 /* ── Messages ── */
 .msg {
@@ -479,7 +481,7 @@ body::after {
 
 .msg-avatar {
   width: 36px; height: 36px;
-  border-radius: 10px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -489,9 +491,7 @@ body::after {
   margin-top: 1px;
   transition: transform .2s, box-shadow .2s;
 }
-.msg:hover .msg-avatar {
-  transform: scale(1.05);
-}
+.msg:hover .msg-avatar { transform: scale(1.05); }
 .msg-body { flex: 1; min-width: 0; }
 .msg-header { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .msg-username {
@@ -1156,17 +1156,24 @@ select.form-input option { background: #0b0f1e; }
 }
 .lightbox img:active { cursor: grabbing; }
 .img-upload-btn {
-  background: none;
-  border: none;
+  background: rgba(0,245,255,.06);
+  border: 1px solid rgba(0,245,255,.2);
+  border-radius: 10px;
   color: var(--cyan);
-  font-size: 1.3rem;
+  font-size: 1rem;
   cursor: pointer;
-  padding: 0 6px;
-  opacity: .7;
-  transition: opacity .2s;
-  align-self: center;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+  align-self: flex-end;
+  flex-shrink: 0;
 }
-.img-upload-btn:hover { opacity: 1; }
+.img-upload-btn:hover {
+  background: rgba(0,245,255,.14);
+  border-color: var(--cyan);
+  box-shadow: 0 0 10px rgba(0,245,255,.2);
+  transform: scale(1.05);
+}
 
 
 /* ── Sidebar tabs ── */
@@ -1414,9 +1421,26 @@ select.form-input option { background: #0b0f1e; }
           <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="previewImage(this)">
           <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="uploadMedia(this,'video')">
           <input type="file" id="fileInput" accept="*/*" style="display:none" onchange="uploadMedia(this,'file')">
-    <button class="img-upload-btn" onclick="document.getElementById('imageInput').click()" title="Gửi ảnh">🖼</button>
-    <button class="img-upload-btn" onclick="document.getElementById('videoInput').click()" title="Gửi video">🎬</button>
-    <button class="img-upload-btn" onclick="document.getElementById('fileInput').click()" title="Gửi file">📎</button>
+          <div style="position:relative;">
+            <button class="img-upload-btn" id="attachBtn" onclick="toggleAttachMenu()" title="Đính kèm">➕</button>
+            <div id="attachMenu" style="display:none;position:absolute;bottom:44px;left:0;background:var(--panel);border:1px solid rgba(0,245,255,.2);border-radius:14px;padding:8px;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,.6);backdrop-filter:blur(20px);z-index:50;">
+              <button onclick="toggleAttachMenu();document.getElementById('imageInput').click();"
+                style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;background:none;border:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;border-radius:8px;transition:background .15s;"
+                onmouseover="this.style.background='rgba(0,245,255,.08)'" onmouseout="this.style.background='none'">
+                🖼 <span>Gửi ảnh</span>
+              </button>
+              <button onclick="toggleAttachMenu();document.getElementById('videoInput').click();"
+                style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;background:none;border:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;border-radius:8px;transition:background .15s;"
+                onmouseover="this.style.background='rgba(0,245,255,.08)'" onmouseout="this.style.background='none'">
+                🎬 <span>Gửi video</span>
+              </button>
+              <button onclick="toggleAttachMenu();document.getElementById('fileInput').click();"
+                style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;background:none;border:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;border-radius:8px;transition:background .15s;"
+                onmouseover="this.style.background='rgba(0,245,255,.08)'" onmouseout="this.style.background='none'">
+                📎 <span>Gửi file</span>
+              </button>
+            </div>
+          </div>
     <button class="send-btn" onclick="sendMessage()">➤</button>
         </div>
       </div>
@@ -2337,6 +2361,22 @@ function backToMain() {
   // Load lại tin nhắn chính
   loadMessages();
   renderGroupList();
+}
+
+function toggleAttachMenu() {
+  const menu = document.getElementById('attachMenu');
+  const isHidden = menu.style.display === 'none';
+  menu.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    setTimeout(() => document.addEventListener('click', function closeAttach(e) {
+      if (!document.getElementById('attachBtn')?.contains(e.target) &&
+          !document.getElementById('attachMenu')?.contains(e.target)) {
+        const m = document.getElementById('attachMenu');
+        if (m) m.style.display = 'none';
+        document.removeEventListener('click', closeAttach);
+      }
+    }), 0);
+  }
 }
 
 function toggleGroupMenu() {
