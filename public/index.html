@@ -2364,6 +2364,7 @@ let groupUnread = {};
 let _groupAvatarData = null;
 
 function switchSidebarTab(tab) {
+  if (tab === 'groups' && me && me.role === 'guest') { toast('Tài khoản khách không thể dùng Groups', 'error'); return; }
   document.getElementById('sidebarUsers').style.display = tab === 'users' ? '' : 'none';
   document.getElementById('sidebarGroups').style.display = tab === 'groups' ? '' : 'none';
   document.getElementById('tabUsers').classList.toggle('active', tab === 'users');
@@ -2517,6 +2518,7 @@ function toggleGroupMenu() {
 }
 
 function openFindGroup() {
+  if (me && me.role === 'guest') { toast('Tài khoản khách không thể tìm nhóm', 'error'); return; }
   document.getElementById('findGroupSearch').value = '';
   document.getElementById('findGroupResults').innerHTML = '';
   openModal('findGroupModal');
@@ -2553,6 +2555,7 @@ async function renderFindGroupResults() {
   } catch(e) { console.error('renderFindGroupResults:', e); }
 }
 async function joinGroup(groupId) {
+  if (me && me.role === 'guest') { toast('Tài khoản khách không thể tham gia nhóm', 'error'); return; }
   try {
     const res = await fetch(`/api/groups/${groupId}/join`, {
       method: 'POST', headers: { 'x-token': token }
@@ -2797,6 +2800,7 @@ function renderSelectedMembers() {
 }
 
 async function createGroup() {
+  if (me && me.role === 'guest') { toast('Tài khoản khách không thể tạo nhóm', 'error'); return; }
   const name = document.getElementById('groupName').value.trim();
   if (!name) { toast('Nhập tên nhóm!', 'error'); return; }
   const avatar = _groupAvatarData || '👥';

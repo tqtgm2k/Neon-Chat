@@ -213,12 +213,25 @@ app.post('/api/guest', (req, res) => {
   res.json({ token, user: publicUser(guestUser) });
 });
 
-app.delete('/api/guest/:id', requireAuth, (req, res) => {
+app.delete('/api/guest/:id', requireAuth, async (req, res) => {
   if (req.user.role !== 'guest') return res.status(403).json({ error: 'Not a guest' });
   if (req.user.id !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
-  const idx = users.findIndex(u => u.id === req.user.id);
+  const gid = req.user.id;
+  // Xoá khỏi users array
+  const idx = users.findIndex(u => u.id === gid);
   if (idx !== -1) users.splice(idx, 1);
+  // Xoá messages trong bộ nhớ
+  messages = messages.filter(m => m.userId !== gid);
+  // Xoá trong MySQL
+  if (dbReady) {
+    try {
+      await pool.execute('DELETE FROM messages WHERE userId = ?', [gid]);
+      await pool.execute('DELETE FROM group_messages WHERE userId = ?', [gid]);
+      await pool.execute('DELETE FROM group_members WHERE userId = ?', [gid]);
+    } catch(e) {}
+  }
   broadcastUsers();
+  io.emit('messages_reload');
   res.json({ ok: true });
 });
 
@@ -440,6 +453,7 @@ app.get('/api/groups', requireAuth, (req, res) => {
 
 // Tạo group mới
 app.post('/api/groups', requireAuth, async (req, res) => {
+  if (req.user.role === 'guest') return res.status(403).json({ error: 'Tài khoản khách không thể tạo nhóm' });
   const { name, memberIds, avatar } = req.body || {};
   if (!name || !name.trim()) return res.status(400).json({ error: 'Tên group không được trống' });
   if (name.trim().length > 50) return res.status(400).json({ error: 'Tên tối đa 50 ký tự' });
@@ -498,6 +512,8 @@ app.delete('/api/groups/:id', requireAuth, async (req, res) => {
 
 // Thêm thành viên vào group
 app.post('/api/groups/:id/members', requireAuth, async (req, res) => {
+  const targetUser = users.find(u => u.id === req.body.userId);
+  if (targetUser && targetUser.role === 'guest') return res.status(403).json({ error: 'Không thể mời tài khoản khách vào nhóm' });
   const group = groups.find(g => g.id === req.params.id);
   if (!group) return res.status(404).json({ error: 'Group not found' });
   const me = group.members.find(m => m.userId === req.user.id);
@@ -584,6 +600,7 @@ app.get('/api/groups/search', requireAuth, (req, res) => {
 
 // Tham gia group
 app.post('/api/groups/:id/join', requireAuth, async (req, res) => {
+  if (req.user.role === 'guest') return res.status(403).json({ error: 'Tài khoản khách không thể tham gia nhóm' });
   const group = groups.find(g => g.id === req.params.id);
   if (!group) return res.status(404).json({ error: 'Group not found' });
   if (group.members.find(m => m.userId === req.user.id))
