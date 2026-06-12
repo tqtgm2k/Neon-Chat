@@ -1560,7 +1560,7 @@ select.form-input option { background: #0b0f1e; }
       <span style="font-family:'Orbitron',monospace;font-size:0.72rem;color:var(--cyan);letter-spacing:2px;opacity:.8;">👤 HỒ SƠ CÁ NHÂN</span>
     </div>
 
-    <div class="modal-body" style="padding-top:8px;">
+    <div class="modal-body" style="padding-top:8px;max-height:65vh;overflow-y:auto;">
       <div class="tab-bar">
         <button class="tab-btn active" onclick="switchProfileTab('info')">Thông tin</button>
         <button class="tab-btn" onclick="switchProfileTab('password')">Đổi mật khẩu</button>
@@ -3283,7 +3283,13 @@ async function saveProfile() {
   const bio = document.getElementById('pBio').value;
   const badge = document.getElementById('pBadge').value;
   const newUsername = document.getElementById('pNewUsername').value.trim();
-  const body = { color, bio, badge };
+  const socials = {
+    facebook: document.getElementById('sFacebook').value.trim(),
+    youtube: document.getElementById('sYoutube').value.trim(),
+    tiktok: document.getElementById('sTiktok').value.trim(),
+    instagram: document.getElementById('sInstagram').value.trim()
+  };
+  const body = { color, bio, badge, socials };
   if (newUsername) body.newUsername = newUsername;
   try {
     const res = await fetch('/api/profile', {
