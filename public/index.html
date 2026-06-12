@@ -1438,7 +1438,6 @@ select.form-input option { background: #0b0f1e; }
           <button onclick="confirmSendImage()" style="background:var(--cyan);color:#000;border:none;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Gửi ➤</button>
         </div>
         <form id="chatForm" class="input-wrap" onsubmit="event.preventDefault();sendMessage();">
-          <textarea id="msgInput" placeholder="Nhắn tin..." rows="1" maxlength="2000"></textarea>
           <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="previewImage(this)">
           <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="uploadMedia(this,'video')">
           <input type="file" id="fileInput" accept="*/*" style="display:none" onchange="uploadMedia(this,'file')">
@@ -1462,6 +1461,7 @@ select.form-input option { background: #0b0f1e; }
               </button>
             </div>
           </div>
+          <textarea id="msgInput" placeholder="Nhắn tin..." rows="1" maxlength="2000"></textarea>
     <button class="send-btn" onclick="sendMessage()">➤</button>
         </form>
       </div>
