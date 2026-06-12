@@ -1318,6 +1318,13 @@ select.form-input option { background: #0b0f1e; }
         ⚡ Đăng nhập
       </button>
       <div class="auth-error" id="loginErr"></div>
+      <div style="margin-top:14px;text-align:center;">
+        <div style="font-size:0.7rem;color:rgba(255,255,255,.25);margin-bottom:10px;letter-spacing:2px;">── HOẶC ──</div>
+        <button class="btn" onclick="doGuestLogin()"
+          style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:var(--text2);font-size:0.85rem;letter-spacing:1px;">
+          👤 Tiếp tục bằng tài khoản khách
+        </button>
+      </div>
     </div>
 
     <!-- Register form -->
@@ -1530,13 +1537,8 @@ select.form-input option { background: #0b0f1e; }
     <!-- Cover + Avatar -->
     <div style="position:relative;flex-shrink:0;">
       <div id="profileCoverBig"
-        style="height:110px;background:linear-gradient(135deg,rgba(0,245,255,.12),rgba(191,0,255,.12));position:relative;overflow:hidden;cursor:pointer;background-size:cover;background-position:center;"
-        onclick="document.getElementById('coverInput').click()"
-        onmouseenter="document.getElementById('coverOverlay').style.opacity='1'"
-        onmouseleave="document.getElementById('coverOverlay').style.opacity='0'">
-        <div id="coverOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;z-index:2;">
-          <span style="color:#fff;font-size:0.75rem;letter-spacing:1px;">📷 ĐỔI ẢNH BÌA</span>
-        </div>
+        ondblclick="document.getElementById('coverInput').click()"
+        style="height:110px;background:linear-gradient(135deg,rgba(0,245,255,.12),rgba(191,0,255,.12));position:relative;overflow:hidden;background-size:cover;background-position:center;cursor:pointer;">
       </div>
       <input type="file" id="coverInput" accept="image/*" style="display:none" onchange="uploadCover(this)">
       <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
@@ -1557,7 +1559,7 @@ select.form-input option { background: #0b0f1e; }
 
     <!-- Label -->
     <div style="padding:38px 16px 0;">
-      <span style="font-family:'Orbitron',monospace;font-size:0.72rem;color:var(--cyan);letter-spacing:2px;opacity:.8;">👤 HỒ SƠ CÁ NHÂN</span>
+      <span style="font-family:'Orbitron',monospace;font-size:0.95rem;color:var(--cyan);letter-spacing:2px;opacity:.9;">👤 HỒ SƠ CÁ NHÂN</span>
     </div>
 
     <div class="modal-body" style="padding-top:8px;max-height:65vh;overflow-y:auto;">
@@ -1913,7 +1915,26 @@ function loginSuccess(tok, user) {
   }
 }
 
+async function doGuestLogin() {
+  try {
+    const res = await fetch('/api/guest', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Lỗi tạo tài khoản khách'); return; }
+    token = data.token;
+    me = data.user;
+    saveSession(token, me);
+    initSocket();
+    showChat();
+    loadMessages();
+    loadGroups();
+    renderQuickColors();
+  } catch { alert('Lỗi kết nối'); }
+}
+
 function doLogout() {
+  if (me && me.role === 'guest') {
+    fetch('/api/guest/' + me.id, { method: 'DELETE', headers: { 'x-token': token } }).catch(() => {});
+  }
   if (socket) socket.disconnect();
   clearSession();
   token = null; me = null; allUsers = []; onlineIds = [];
@@ -3096,6 +3117,7 @@ document.addEventListener('keydown', (e) => {
 // ── Profile modal ────────────────────────────
 function openProfile() {
   if (!me) return;
+  if (me.role === 'guest') { toast('Tài khoản khách không có hồ sơ', 'error'); return; }
   const color = me.color || '#00f5ff';
   const socials = me.socials || {};
 

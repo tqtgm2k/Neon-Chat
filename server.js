@@ -196,6 +196,32 @@ function requireAuth(req, res, next) {
 // ─── API Routes ───────────────────────────────────────────────────────────────
 
 // Login
+app.post('/api/guest', (req, res) => {
+  const existing = users.filter(u => u.role === 'guest');
+  const nums = existing.map(u => parseInt((u.username || '').replace('Khách ', '')) || 0);
+  const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  const guestId = 'guest-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+  const guestUser = {
+    id: guestId, username: 'Khách ' + nextNum, loginName: null, email: null,
+    password: '', role: 'guest', color: '#aaaaaa', bio: '', badge: '👤 KHÁCH',
+    avatar: null, cover: null, socials: {}, msgCount: 0, banned: false,
+    createdAt: new Date().toISOString()
+  };
+  users.push(guestUser);
+  broadcastUsers();
+  const token = generateToken(guestUser.id);
+  res.json({ token, user: publicUser(guestUser) });
+});
+
+app.delete('/api/guest/:id', requireAuth, (req, res) => {
+  if (req.user.role !== 'guest') return res.status(403).json({ error: 'Not a guest' });
+  if (req.user.id !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
+  const idx = users.findIndex(u => u.id === req.user.id);
+  if (idx !== -1) users.splice(idx, 1);
+  broadcastUsers();
+  res.json({ ok: true });
+});
+
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Vui lòng nhập email và mật khẩu' });
