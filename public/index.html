@@ -960,54 +960,107 @@ body::after {
 .role-user  { color: var(--user-c); }
 
 /* ── User profile popup ── */
+/* ── HUD Hologram Popup ── */
 #userPopup {
   position: fixed;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-  width: 220px;
-  z-index: 200;
-  box-shadow: 0 0 30px rgba(0,245,255,.1), 0 20px 50px rgba(0,0,0,.6);
+  inset: 0;
+  z-index: 500;
   display: none;
-  backdrop-filter: blur(16px);
-}
-#userPopup.show { display: block; animation: fadeIn .15s ease; }
-.popup-avatar {
-  position: relative;
-  width: 50px; height: 50px;
-  border-radius: 50%;
-  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  font-weight: 900;
-  margin: 0 auto 10px;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
-.popup-name {
-  text-align: center;
-  font-weight: 800;
-  font-size: 1rem;
-  letter-spacing: .5px;
-  text-shadow: 0 0 10px currentColor;
+#userPopup.show { display: flex; animation: hudFadeIn 0.25s ease; }
+@keyframes hudFadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes hudFloat {
+  0%,100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
 }
-.popup-role {
-  text-align: center;
-  font-size: 0.75rem;
-  color: var(--text2);
-  margin-top: 3px;
-  letter-spacing: .8px;
-  text-transform: uppercase;
-  font-family: 'Orbitron', monospace;
+@keyframes ringRotate { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+.hud-container {
+  display: flex; flex-direction: column; align-items: center;
+  animation: hudFloat 4s ease-in-out infinite; padding: 20px; position: relative;
 }
+.hud-avatar-wrap {
+  position: relative; width: 90px; height: 90px;
+  display: flex; align-items: center; justify-content: center;
+}
+.hud-ring {
+  position: absolute; border-radius: 50%;
+}
+.hud-ring-1 {
+  width: 90px; height: 90px;
+  border: 1px dashed rgba(0,245,255,0.5);
+  animation: ringRotate 6s linear infinite;
+}
+.hud-ring-2 {
+  width: 114px; height: 114px;
+  border: 1px dotted rgba(191,0,255,0.4);
+  animation: ringRotate 10s linear infinite reverse;
+}
+.hud-avatar {
+  width: 66px; height: 66px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 900; overflow: hidden;
+  position: relative; z-index: 2;
+}
+.hud-vline {
+  width: 1px; background: linear-gradient(to bottom, rgba(0,245,255,0.5), rgba(0,245,255,0.05));
+}
+.hud-username {
+  font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 900;
+  letter-spacing: 3px; text-align: center; margin-bottom: 6px;
+  text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+}
+.hud-role-tag {
+  font-family: 'Courier New', monospace; font-size: 0.68rem; letter-spacing: 2px;
+  padding: 3px 14px; border-radius: 2px; text-align: center;
+  border: 1px solid rgba(0,245,255,0.25); color: rgba(0,245,255,0.7);
+}
+.hud-stats-wrap {
+  display: flex; align-items: center; width: 100%;
+  max-width: 300px; gap: 0; margin: 0;
+}
+.hud-hline { flex: 1; height: 1px; background: rgba(0,245,255,0.2); }
+.hud-dot {
+  width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+  background: #00f5ff; box-shadow: 0 0 8px #00f5ff;
+}
+.hud-stat-node {
+  font-family: 'Courier New', monospace; font-size: 0.68rem;
+  color: rgba(0,245,255,0.85); padding: 5px 10px;
+  border: 1px solid rgba(0,245,255,0.18); border-radius: 3px;
+  background: rgba(0,245,255,0.04); text-align: center; white-space: nowrap;
+}
+.hud-bio-text {
+  font-family: 'Courier New', monospace; font-size: 0.73rem;
+  color: rgba(255,255,255,0.4); text-align: center;
+  max-width: 260px; line-height: 1.6; letter-spacing: 0.5px;
+}
+.hud-actions { display: flex; gap: 12px; }
+.hud-btn {
+  background: transparent; border: 1px solid rgba(0,245,255,0.3);
+  color: rgba(0,245,255,0.8); font-family: 'Orbitron', monospace;
+  font-size: 0.6rem; letter-spacing: 1px; padding: 7px 16px;
+  border-radius: 2px; cursor: pointer; transition: all 0.2s;
+}
+.hud-btn:hover {
+  background: rgba(0,245,255,0.1); color: #00f5ff;
+  box-shadow: 0 0 14px rgba(0,245,255,0.3); border-color: rgba(0,245,255,0.7);
+}
+.hud-btn-close {
+  border-color: rgba(191,0,255,0.3); color: rgba(191,0,255,0.7);
+}
+.hud-btn-close:hover {
+  background: rgba(191,0,255,0.1); color: #bf00ff;
+  box-shadow: 0 0 14px rgba(191,0,255,0.3); border-color: rgba(191,0,255,0.7);
+}
+/* keep old classes so nothing breaks */
 .popup-bio {
-  font-size: 0.8rem;
-  color: rgba(180,190,220,.7);
-  text-align: center;
-  margin-top: 10px;
-  min-height: 16px;
-  line-height: 1.5;
-  padding: 8px 12px;
+  font-size: 0.8rem; color: rgba(180,190,220,.7); text-align: center;
+  margin-top: 10px; min-height: 16px; line-height: 1.5; padding: 8px 12px;
   background: rgba(0,245,255,.03);
   border-radius: 8px;
   border: 1px solid rgba(0,245,255,.06);
@@ -1725,11 +1778,29 @@ select.form-input option { background: #0b0f1e; }
 <!-- ══════════════════════════════════════════
    USER POPUP
 ══════════════════════════════════════════ -->
-<div id="userPopup">
-  <div class="popup-avatar" id="popupAvatar"></div>
-  <div class="popup-name" id="popupName"></div>
-  <div class="popup-role" id="popupRole"></div>
-  <div class="popup-bio" id="popupBio"></div>
+<div id="userPopup" onclick="if(event.target===this)hideUserPopup()">
+  <div class="hud-container">
+    <div class="hud-avatar-wrap">
+      <div class="hud-ring hud-ring-1"></div>
+      <div class="hud-ring hud-ring-2"></div>
+      <div id="popupAvatar" class="hud-avatar"></div>
+    </div>
+    <div class="hud-vline" style="height:14px;"></div>
+    <div id="popupName" class="hud-username"></div>
+    <div id="popupRole" class="hud-role-tag"></div>
+    <div class="hud-vline" style="height:14px;"></div>
+    <div class="hud-stats-wrap">
+      <div class="hud-stat-node" id="hudStatMsg">&gt; MSG: 0</div>
+      <div class="hud-hline"></div>
+      <div class="hud-dot"></div>
+      <div class="hud-hline"></div>
+      <div class="hud-stat-node" id="hudStatLvl">&gt; LVL: 1</div>
+    </div>
+    <div class="hud-vline" style="height:14px;"></div>
+    <div id="popupBio" class="hud-bio-text"></div>
+    <div class="hud-vline" style="height:16px;"></div>
+    <div class="hud-actions" id="hudActions"></div>
+  </div>
 </div>
 
 <!-- Toast container -->
@@ -3079,26 +3150,44 @@ function showUserPopupById(event, userId) {
   renderPopup(user, event.clientX, event.clientY);
 }
 function renderPopup(user, x, y) {
-  const popup = document.getElementById('userPopup');
-  const color = user.color || '#c8d8ff';
+  const color = user.color || '#00f5ff';
   const online = onlineIds.includes(user.id);
-  const popupAv = document.getElementById('popupAvatar');
-  popupAv.style.cssText = `background:${color}22;color:${color};border:2px solid ${color}88;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:900;margin:0 auto 10px;overflow:hidden;`;
-  popupAv.innerHTML = user.avatar ? `<img src="${user.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : initials(user.username);
-  document.getElementById('popupName').style.color = color;
-  document.getElementById('popupName').textContent = user.username;
-  document.getElementById('popupRole').innerHTML = roleName(user.role) + (online ? ' &nbsp; 🟢 Online' : ' &nbsp; ⚫ Offline');
-  document.getElementById('popupBio').textContent = user.bio || '—';
 
-  popup.classList.add('show');
+  // Avatar
+  const av = document.getElementById('popupAvatar');
+  av.style.cssText = 'background:' + color + '22;color:' + color + ';width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;overflow:hidden;box-shadow:0 0 24px ' + color + '55;';
+  av.innerHTML = user.avatar ? '<img src="' + user.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : initials(user.username);
 
-  // Position popup
-  const vw = window.innerWidth, vh = window.innerHeight;
-  let px = x + 10, py = y + 10;
-  if (px + 220 > vw) px = x - 230;
-  if (py + 180 > vh) py = y - 180;
-  popup.style.left = Math.max(8, px) + 'px';
-  popup.style.top = Math.max(8, py) + 'px';
+  // Username
+  const nameEl = document.getElementById('popupName');
+  nameEl.style.color = color;
+  nameEl.textContent = user.username;
+
+  // Role + status
+  const secLevel = { owner:'ROOT_ACCESS', admin:'ELEVATED', user:'STANDARD', guest:'LIMITED' };
+  const roleEl = document.getElementById('popupRole');
+  const statusClr = online ? '#00ff88' : 'rgba(255,255,255,0.25)';
+  roleEl.style.borderColor = online ? 'rgba(0,255,136,0.3)' : 'rgba(255,255,255,0.1)';
+  roleEl.style.color = statusClr;
+  roleEl.innerHTML = '[ ' + (secLevel[user.role]||'STANDARD') + ' ] &nbsp;' + (online ? '● ONLINE' : '○ OFFLINE');
+
+  // Stats
+  const msgCount = user.msgCount || 0;
+  const lvl = Math.max(1, Math.floor(msgCount / 50) + 1);
+  document.getElementById('hudStatMsg').textContent = '> MSG: ' + msgCount;
+  document.getElementById('hudStatLvl').textContent = '> LVL: ' + lvl;
+
+  // Bio
+  document.getElementById('popupBio').textContent = user.bio || 'NO_BIO_DATA';
+
+  // Actions
+  const isSelf = me && me.id === user.id;
+  const actEl = document.getElementById('hudActions');
+  actEl.innerHTML = isSelf
+    ? '<button class="hud-btn" onclick="hideUserPopup();openProfile();">[ EDIT_PROFILE ]</button><button class="hud-btn hud-btn-close" onclick="hideUserPopup()">[ CLOSE ]</button>'
+    : '<button class="hud-btn hud-btn-close" onclick="hideUserPopup()">[ CLOSE ]</button>';
+
+  document.getElementById('userPopup').classList.add('show');
 }
 function hideUserPopup() {
   document.getElementById('userPopup').classList.remove('show');
