@@ -1040,6 +1040,19 @@ body::after {
   max-width: 260px; line-height: 1.6; letter-spacing: 0.5px;
 }
 .hud-actions { display: flex; gap: 12px; }
+@media (min-width: 768px) {
+  .hud-avatar-wrap { width: 130px; height: 130px; }
+  .hud-ring-1 { width: 130px; height: 130px; }
+  .hud-ring-2 { width: 160px; height: 160px; }
+  .hud-avatar { width: 96px; height: 96px; font-size: 2rem; }
+  .hud-username { font-size: 1.6rem; letter-spacing: 5px; }
+  .hud-role-tag { font-size: 0.85rem; letter-spacing: 3px; padding: 5px 20px; }
+  .hud-stat-node { font-size: 0.85rem; padding: 8px 16px; }
+  .hud-bio-text { font-size: 0.9rem; max-width: 380px; }
+  .hud-btn { font-size: 0.75rem; padding: 10px 24px; letter-spacing: 2px; }
+  .hud-stats-wrap { max-width: 420px; }
+  .hud-vline { height: 20px !important; }
+}
 .hud-btn {
   background: transparent; border: 1px solid rgba(0,245,255,0.3);
   color: rgba(0,245,255,0.8); font-family: 'Orbitron', monospace;
