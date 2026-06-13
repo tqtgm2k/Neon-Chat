@@ -536,10 +536,60 @@ body::after {
   margin-top: 4px;
   line-height: 1.6;
   word-break: break-word;
-  white-space: pre-wrap;
   color: rgba(220,230,255,.9);
   font-size: 0.95rem;
 }
+.msg-bubble {
+  background: rgba(255,255,255,.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 0 10px 10px 10px;
+  padding: 8px 12px;
+  border-left: 2px solid rgba(0,245,255,.5);
+  max-height: 350px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,245,255,.3) transparent;
+}
+.msg-bubble::-webkit-scrollbar { width: 3px; }
+.msg-bubble::-webkit-scrollbar-thumb { background: rgba(0,245,255,.3); border-radius: 2px; }
+.msg-mine .msg-bubble {
+  border-left-color: rgba(191,0,255,.6);
+  background: rgba(191,0,255,.04);
+}
+/* Code block */
+pre[class*="language-"] {
+  background: #070913 !important;
+  border: 1px solid rgba(0,245,255,.15) !important;
+  border-radius: 8px !important;
+  margin: 6px 0 !important;
+  padding: 14px 16px 14px 16px !important;
+  position: relative !important;
+  max-height: 400px;
+  overflow: auto !important;
+  box-shadow: 0 0 20px rgba(0,245,255,.06) !important;
+}
+pre[class*="language-"]::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 6px; right: 10px;
+  font-size: 0.62rem;
+  letter-spacing: 2px;
+  color: rgba(0,245,255,.45);
+  font-family: 'Orbitron', monospace;
+}
+code[class*="language-"] {
+  font-family: 'Fira Code', 'Courier New', monospace !important;
+  font-size: 0.82rem !important;
+}
+.token.keyword { color: #ff79c6 !important; text-shadow: 0 0 8px rgba(255,121,198,.6) !important; }
+.token.string  { color: #50fa7b !important; text-shadow: 0 0 8px rgba(80,250,123,.4) !important; }
+.token.comment { color: rgba(255,255,255,.3) !important; font-style: italic; }
+.token.function { color: #8be9fd !important; }
+.token.number  { color: #bd93f9 !important; }
+.token.operator { color: #ff79c6 !important; }
+.token.class-name { color: #f1fa8c !important; }
 .msg-delete {
   opacity: 0;
   background: none;
@@ -1347,6 +1397,14 @@ select.form-input option { background: #0b0f1e; }
 .add-member-wrap { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
 
 </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js" defer></script>
 </head>
 <body>
 
@@ -1879,6 +1937,24 @@ function roleClass(role) {
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+function renderText(content) {
+  const codeRe = /```(\w*)
+?([\s\S]*?)```/g;
+  let result = '', lastIdx = 0, match;
+  while ((match = codeRe.exec(content)) !== null) {
+    const before = content.slice(lastIdx, match.index).trim();
+    if (before) result += '<div class="msg-bubble">' + linkify(before) + '</div>';
+    const lang = match[1] || 'plaintext';
+    const code = match[2].replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    result += '<pre class="language-' + lang + '" data-lang="' + lang.toUpperCase() + '"><code class="language-' + lang + '">' + code + '</code></pre>';
+    lastIdx = match.index + match[0].length;
+  }
+  const tail = content.slice(lastIdx).trim();
+  if (tail) result += '<div class="msg-bubble">' + linkify(tail) + '</div>';
+  if (!result) result = '<div class="msg-bubble">' + linkify(content) + '</div>';
+  return result;
+}
+
 function linkify(text) {
   const esc = escHtml(text);
   return esc.replace(/(https?:\/\/[^\s<>"]+)/gi, '<a href="$1" target="_blank" rel="noopener" style="color:var(--cyan)">$1</a>');
@@ -2199,7 +2275,7 @@ function appendMessage(msg, animate = true) {
   const badgeLabel = msg.badge || (msg.role === 'owner' ? '⚡ OWNER' : msg.role === 'admin' ? '🛡️ ADMIN' : '');
 
   const div = document.createElement('div');
-  div.className = 'msg';
+  div.className = 'msg' + (me && msg.userId === me.id ? ' msg-mine' : '');
   div.id = 'msg-' + msg.id;
   div.dataset.userId = msg.userId || '';
   div.style.animation = animate ? 'fadeIn .2s ease' : 'none';
@@ -2219,7 +2295,7 @@ function appendMessage(msg, animate = true) {
       <div class="msg-content">${
         isImage ? `<img class="msg-image" src="${msg.imageData}" onclick="openImage(this.src)" oncontextmenu="return false;" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">`
         : (msg.type === 'video' || msg.type === 'file') ? renderFileMsg(msg)
-        : linkify(msg.content)
+        : renderText(msg.content)
       }</div>
     </div>
     <div class="msg-actions">
@@ -2240,6 +2316,7 @@ function appendMessage(msg, animate = true) {
   div.addEventListener('touchmove', () => clearTimeout(pressTimer));
 
   container.appendChild(div);
+  if (typeof Prism !== 'undefined') Prism.highlightAllUnder(div);
 
   // Remove old messages if too many
   const msgs = container.querySelectorAll('.msg');
