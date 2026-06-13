@@ -1980,7 +1980,8 @@ function renderText(content) {
 function linkify(text) {
   let esc = escHtml(text);
   esc = esc.replace(/\*\*([\s\S]+?)\*\*/g, '<strong style="font-weight:700;">$1</strong>');
-  esc = esc.replace(/(https?:\/\/[^\s<>"]+)/gi, '<a href="$1" target="_blank" rel="noopener" style="color:var(--cyan)">$1</a>');
+  esc = esc.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:#4a9eff;font-weight:600;text-decoration:underline;">$1</a>');
+  esc = esc.replace(/(?<!["=])(https?:\/\/[^\s<>"]+)/gi, '<a href="$1" target="_blank" rel="noopener" style="color:var(--cyan)">$1</a>');
   return esc;
 }
 function autoGrow(el) {
