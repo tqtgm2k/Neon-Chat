@@ -1930,21 +1930,44 @@ function roleClass(role) {
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+function detectCodeLang(text) {
+  if (text.trim().split('\n').length < 2) return null;
+  if (/using\s+[\w.]+;|namespace\s+\w+|public\s+(class|void|static|partial|override)|private\s+(void|static|int|string|bool|double)|protected\s+|InitializeComponent|\.Text\s*=/.test(text)) return 'csharp';
+  if (/^(function\s+\w+|const\s+\w+\s*=|let\s+\w+\s*=|var\s+\w+\s*=|=>\s*\{|document\.|console\.)/m.test(text)) return 'javascript';
+  if (/^(def |import |from .+ import |class \w+:|elif |print\()/m.test(text)) return 'python';
+  if (/<\w+[\s/>]|<\/\w+>/.test(text)) return 'markup';
+  const braces = (text.match(/[{};]/g)||[]).length;
+  const indented = text.split('\n').filter(l => /^[ \t]{2,}/.test(l)).length;
+  if (braces >= 3 && indented >= 2) return 'clike';
+  return null;
+}
+
 function renderText(content) {
+  // Backtick code block thủ công
   const codeRe = /```(\w+)?\n?([\s\S]*?)```/g;
-  let result = '', lastIdx = 0, match;
-  while ((match = codeRe.exec(content)) !== null) {
-    const before = content.slice(lastIdx, match.index).trim();
-    if (before) result += '<div class="msg-bubble">' + linkify(before) + '</div>';
-    const lang = match[1] || 'plaintext';
-    const code = match[2].replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    result += '<pre class="language-' + lang + '" data-lang="' + lang.toUpperCase() + '"><code class="language-' + lang + '">' + code + '</code></pre>';
-    lastIdx = match.index + match[0].length;
+  if (codeRe.test(content)) {
+    codeRe.lastIndex = 0;
+    let result = '', lastIdx = 0, match;
+    while ((match = codeRe.exec(content)) !== null) {
+      const before = content.slice(lastIdx, match.index).trim();
+      if (before) result += '<div class="msg-bubble">' + linkify(before) + '</div>';
+      const lang = match[1] || 'plaintext';
+      const code = match[2].replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      result += '<pre class="language-' + lang + '" data-lang="' + lang.toUpperCase() + '"><code class="language-' + lang + '">' + code + '</code></pre>';
+      lastIdx = match.index + match[0].length;
+    }
+    const tail = content.slice(lastIdx).trim();
+    if (tail) result += '<div class="msg-bubble">' + linkify(tail) + '</div>';
+    return result;
   }
-  const tail = content.slice(lastIdx).trim();
-  if (tail) result += '<div class="msg-bubble">' + linkify(tail) + '</div>';
-  if (!result) result = '<div class="msg-bubble">' + linkify(content) + '</div>';
-  return result;
+  // Tự động nhận diện code
+  const lang = detectCodeLang(content);
+  if (lang) {
+    const code = content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<pre class="language-' + lang + '" data-lang="' + lang.toUpperCase() + '"><code class="language-' + lang + '">' + code + '</code></pre>';
+  }
+  // Tin nhắn thường
+  return '<div class="msg-bubble">' + linkify(content) + '</div>';
 }
 
 function linkify(text) {
