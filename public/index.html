@@ -546,14 +546,8 @@ body::after {
   border-radius: 0 10px 10px 10px;
   padding: 8px 12px;
   border-left: 2px solid rgba(0,245,255,.5);
-  max-height: 350px;
-  overflow-y: auto;
   white-space: pre-wrap;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,245,255,.3) transparent;
 }
-.msg-bubble::-webkit-scrollbar { width: 3px; }
-.msg-bubble::-webkit-scrollbar-thumb { background: rgba(0,245,255,.3); border-radius: 2px; }
 .msg-mine .msg-bubble {
   border-left-color: rgba(191,0,255,.6);
   background: rgba(191,0,255,.04);
@@ -566,8 +560,7 @@ pre[class*="language-"] {
   margin: 6px 0 !important;
   padding: 14px 16px 14px 16px !important;
   position: relative !important;
-  max-height: 400px;
-  overflow: auto !important;
+  overflow-x: auto !important;
   box-shadow: 0 0 20px rgba(0,245,255,.06) !important;
 }
 pre[class*="language-"]::before {
@@ -1399,11 +1392,11 @@ select.form-input option { background: #0b0f1e; }
 </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js" defer></script>
 </head>
 <body>
@@ -2315,7 +2308,7 @@ function appendMessage(msg, animate = true) {
   div.addEventListener('touchmove', () => clearTimeout(pressTimer));
 
   container.appendChild(div);
-  if (typeof Prism !== 'undefined') Prism.highlightAllUnder(div);
+  setTimeout(() => { if (typeof Prism !== 'undefined') Prism.highlightAllUnder(div); }, 50);
 
   // Remove old messages if too many
   const msgs = container.querySelectorAll('.msg');
