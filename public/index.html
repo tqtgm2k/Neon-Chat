@@ -2303,6 +2303,7 @@ function appendMessage(msg, animate = true) {
   div.className = 'msg' + (me && msg.userId === me.id ? ' msg-mine' : '');
   div.id = 'msg-' + msg.id;
   div.dataset.userId = msg.userId || '';
+  div.dataset.raw = msg.content || '';
   div.style.animation = animate ? 'fadeIn .2s ease' : 'none';
 
   const isImage = msg.type === 'image';
@@ -3009,7 +3010,7 @@ async function createGroup() {
 
 async function copyMsgText(btn) {
   const msgEl = btn.closest('.msg');
-  const text = msgEl?.querySelector('.msg-content')?.textContent || '';
+  const text = msgEl?.dataset.raw || msgEl?.querySelector('.msg-content')?.textContent || '';
   if (!text) return;
   try { await navigator.clipboard.writeText(text); }
   catch {
