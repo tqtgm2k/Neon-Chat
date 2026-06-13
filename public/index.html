@@ -1938,8 +1938,7 @@ function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function renderText(content) {
-  const codeRe = /```(\w*)
-?([\s\S]*?)```/g;
+  const codeRe = /```(\w+)?\n?([\s\S]*?)```/g;
   let result = '', lastIdx = 0, match;
   while ((match = codeRe.exec(content)) !== null) {
     const before = content.slice(lastIdx, match.index).trim();
