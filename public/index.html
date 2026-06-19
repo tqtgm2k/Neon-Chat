@@ -1096,7 +1096,38 @@ code[class*="language-"] {
   max-width: 260px; line-height: 1.6; letter-spacing: 0.5px;
 }
 .hud-actions { display: flex; gap: 12px; }
+/* cover banner */
+.hud-cover {
+  width: 300px; max-width: 82vw; height: 84px; border-radius: 10px;
+  background-size: cover; background-position: center; margin-bottom: 16px;
+  border: 1px solid rgba(0,245,255,0.25);
+  box-shadow: 0 0 22px rgba(0,245,255,0.18); display: none;
+}
+/* custom badge */
+.hud-badge {
+  font-family: 'Courier New', monospace; font-size: 0.66rem; letter-spacing: 1px;
+  padding: 3px 14px; border-radius: 20px; margin-top: 6px;
+  background: rgba(191,0,255,0.08); border: 1px solid rgba(191,0,255,0.32);
+  color: rgba(191,0,255,0.88); display: none;
+  box-shadow: 0 0 10px rgba(191,0,255,0.15);
+}
+/* social links */
+.hud-socials { display: none; gap: 16px; align-items: center; justify-content: center; }
+.hud-socials a {
+  font-size: 1.25rem; text-decoration: none; opacity: 0.8; transition: 0.2s;
+  filter: drop-shadow(0 0 5px rgba(0,245,255,0.45)); line-height: 1;
+}
+.hud-socials a:hover { opacity: 1; transform: scale(1.22); }
+/* join date */
+.hud-join {
+  font-family: 'Courier New', monospace; font-size: 0.62rem;
+  color: rgba(255,255,255,0.32); letter-spacing: 1px; display: none;
+}
 @media (min-width: 768px) {
+  .hud-cover { width: 360px; height: 104px; }
+  .hud-badge { font-size: 0.78rem; padding: 4px 18px; }
+  .hud-socials a { font-size: 1.5rem; }
+  .hud-join { font-size: 0.72rem; }
   .hud-avatar-wrap { width: 130px; height: 130px; }
   .hud-ring-1 { width: 130px; height: 130px; }
   .hud-ring-2 { width: 160px; height: 160px; }
@@ -1981,6 +2012,7 @@ select.form-input option { background: #0b0f1e; }
 ══════════════════════════════════════════ -->
 <div id="userPopup" onclick="if(event.target===this)hideUserPopup()">
   <div class="hud-container">
+    <div id="popupCover" class="hud-cover"></div>
     <div class="hud-avatar-wrap">
       <div class="hud-ring hud-ring-1"></div>
       <div class="hud-ring hud-ring-2"></div>
@@ -1989,6 +2021,7 @@ select.form-input option { background: #0b0f1e; }
     <div class="hud-vline" style="height:14px;"></div>
     <div id="popupName" class="hud-username"></div>
     <div id="popupRole" class="hud-role-tag"></div>
+    <div id="popupBadge" class="hud-badge"></div>
     <div class="hud-vline" style="height:14px;"></div>
     <div class="hud-stats-wrap">
       <div class="hud-stat-node" id="hudStatMsg">&gt; MSG: 0</div>
@@ -1999,6 +2032,8 @@ select.form-input option { background: #0b0f1e; }
     </div>
     <div class="hud-vline" style="height:14px;"></div>
     <div id="popupBio" class="hud-bio-text"></div>
+    <div id="popupSocials" class="hud-socials" style="margin-top:12px;"></div>
+    <div id="popupJoin" class="hud-join" style="margin-top:10px;"></div>
     <div class="hud-vline" style="height:16px;"></div>
     <div class="hud-actions" id="hudActions"></div>
   </div>
@@ -3435,6 +3470,51 @@ function renderPopup(user, x, y) {
 
   // Bio
   document.getElementById('popupBio').textContent = user.bio || 'NO_BIO_DATA';
+
+  // Cover banner
+  const coverEl = document.getElementById('popupCover');
+  if (user.cover) {
+    coverEl.style.backgroundImage = 'url(' + user.cover + ')';
+    coverEl.style.display = 'block';
+  } else {
+    coverEl.style.backgroundImage = '';
+    coverEl.style.display = 'none';
+  }
+
+  // Custom badge
+  const badgeEl = document.getElementById('popupBadge');
+  if (user.badge) {
+    badgeEl.textContent = user.badge;
+    badgeEl.style.display = 'inline-block';
+  } else {
+    badgeEl.style.display = 'none';
+  }
+
+  // Social links
+  const socials = user.socials || {};
+  const socialDefs = [
+    ['facebook', '📘'], ['youtube', '▶️'], ['tiktok', '🎵'], ['instagram', '📷']
+  ];
+  const socEl = document.getElementById('popupSocials');
+  const links = socialDefs
+    .filter(([k]) => socials[k] && String(socials[k]).trim())
+    .map(([k, icon]) => {
+      let url = String(socials[k]).trim();
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      return '<a href="' + escHtml(url) + '" target="_blank" rel="noopener noreferrer" title="' + k + '">' + icon + '</a>';
+    })
+    .join('');
+  socEl.innerHTML = links;
+  socEl.style.display = links ? 'flex' : 'none';
+
+  // Join date
+  const joinEl = document.getElementById('popupJoin');
+  if (user.createdAt) {
+    joinEl.textContent = '◊ THAM GIA: ' + new Date(user.createdAt).toLocaleDateString('vi-VN');
+    joinEl.style.display = 'block';
+  } else {
+    joinEl.style.display = 'none';
+  }
 
   // Actions
   const isSelf = me && me.id === user.id;
