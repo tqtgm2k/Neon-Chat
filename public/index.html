@@ -1096,13 +1096,6 @@ code[class*="language-"] {
   max-width: 260px; line-height: 1.6; letter-spacing: 0.5px;
 }
 .hud-actions { display: flex; gap: 12px; }
-/* cover banner */
-.hud-cover {
-  width: 300px; max-width: 82vw; height: 84px; border-radius: 10px;
-  background-size: cover; background-position: center; margin-bottom: 16px;
-  border: 1px solid rgba(0,245,255,0.25);
-  box-shadow: 0 0 22px rgba(0,245,255,0.18); display: none;
-}
 /* custom badge */
 .hud-badge {
   font-family: 'Courier New', monospace; font-size: 0.66rem; letter-spacing: 1px;
@@ -1124,7 +1117,6 @@ code[class*="language-"] {
   color: rgba(255,255,255,0.32); letter-spacing: 1px; display: none;
 }
 @media (min-width: 768px) {
-  .hud-cover { width: 360px; height: 104px; }
   .hud-badge { font-size: 0.78rem; padding: 4px 18px; }
   .hud-socials a { font-size: 1.5rem; }
   .hud-join { font-size: 0.72rem; }
@@ -2012,7 +2004,6 @@ select.form-input option { background: #0b0f1e; }
 ══════════════════════════════════════════ -->
 <div id="userPopup" onclick="if(event.target===this)hideUserPopup()">
   <div class="hud-container">
-    <div id="popupCover" class="hud-cover"></div>
     <div class="hud-avatar-wrap">
       <div class="hud-ring hud-ring-1"></div>
       <div class="hud-ring hud-ring-2"></div>
@@ -3470,16 +3461,6 @@ function renderPopup(user, x, y) {
 
   // Bio
   document.getElementById('popupBio').textContent = user.bio || 'NO_BIO_DATA';
-
-  // Cover banner
-  const coverEl = document.getElementById('popupCover');
-  if (user.cover) {
-    coverEl.style.backgroundImage = 'url(' + user.cover + ')';
-    coverEl.style.display = 'block';
-  } else {
-    coverEl.style.backgroundImage = '';
-    coverEl.style.display = 'none';
-  }
 
   // Custom badge
   const badgeEl = document.getElementById('popupBadge');
