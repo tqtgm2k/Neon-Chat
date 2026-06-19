@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Dữ liệu người dùng (không đẩy lên repo)
+data/
+
+# Backup
+*.bak
+
+# Biến môi trường / bí mật
+.env
+.env.*
+!.env.example
+
+# Log
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Công cụ Claude Code (local)
+.claude/
+.agents/
+skills-lock.json

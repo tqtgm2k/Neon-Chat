@@ -28,7 +28,11 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const SECRET = 'NeonChat_S3cr3t_K3y_2024!';
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) {
+  console.error('❌ Thiếu biến môi trường JWT_SECRET. Hãy đặt JWT_SECRET trước khi chạy server.');
+  process.exit(1);
+}
 const DATA_DIR = path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
