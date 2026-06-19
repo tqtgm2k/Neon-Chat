@@ -1472,11 +1472,12 @@ select.form-input option { background: #0b0f1e; }
 .group-header-meta { font-size: 0.75rem; color: var(--text2); }
 
 /* ── Group Members Modal ── */
-.members-list { display: flex; flex-direction: column; gap: 6px; max-height: 380px; overflow-y: auto; padding-right: 4px; }
-.member-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,.2); border: 1px solid var(--border); transition: all .15s; }
+.members-list { display: flex; flex-direction: column; gap: 6px; max-height: min(380px, 48vh); overflow-y: auto; padding-right: 4px; }
+.member-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,.2); border: 1px solid var(--border); transition: all .15s; flex-wrap: wrap; }
 .member-row:hover { background: rgba(0,245,255,.06); border-color: rgba(0,245,255,.2); }
 .member-avatar-sm { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; flex-shrink: 0; overflow: hidden; }
-.member-name-wrap { flex: 1; min-width: 0; }
+.member-name-wrap { flex: 1; min-width: 110px; }
+.member-actions { display: flex; gap: 4px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
 .member-uname { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .member-role-tag { font-size: 0.72rem; color: var(--text2); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
 .member-status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
@@ -1490,6 +1491,33 @@ select.form-input option { background: #0b0f1e; }
 .ghb:hover { background: rgba(0,245,255,.12); border-color: var(--cyan); color: var(--cyan); }
 .ghb.danger:hover { background: rgba(255,50,50,.12); border-color: #ff4444; color: #ff4444; }
 .ghb.back { color: var(--text2); }
+
+/* ════════════════════════════════════════
+   GROUP — RESPONSIVE
+════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Group list trong drawer: vùng chạm thoáng hơn */
+  .group-item { padding: 11px 12px; margin: 3px 8px; }
+  .group-avatar { width: 42px; height: 42px; }
+
+  /* Modal group ôm gần hết màn hình điện thoại */
+  #createGroupModal .modal,
+  #findGroupModal .modal,
+  #groupMembersModal .modal { max-width: 100%; width: 100%; }
+
+  .members-list { max-height: min(380px, 42vh); }
+
+  /* Nút thao tác thành viên: dễ bấm hơn trên cảm ứng */
+  .member-actions button { padding: 6px 10px !important; font-size: 0.74rem !important; }
+}
+
+@media (max-width: 380px) {
+  /* Máy nhỏ: cho nút thao tác xuống dòng full-width gọn gàng */
+  .member-row { gap: 8px; padding: 9px 10px; }
+  .member-avatar-sm { width: 32px; height: 32px; }
+  .member-name-wrap { min-width: 90px; }
+  .member-actions { width: 100%; justify-content: flex-start; padding-top: 4px; border-top: 1px solid rgba(0,245,255,.06); }
+}
 
 /* Members modal add user section */
 .add-member-wrap { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
@@ -1729,7 +1757,8 @@ select.form-input option { background: #0b0f1e; }
           <label class="form-label" style="margin:0;">THÀNH VIÊN <span id="selectedMemberCount" style="color:var(--cyan);">(0/100)</span></label>
           <input class="form-input" id="groupMemberSearch" placeholder="🔍 Tìm..." oninput="renderGroupMemberPicker()" style="width:120px;padding:4px 10px;font-size:0.82rem;">
         </div>
-        <div id="groupMemberPicker" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:6px;"></div>
+        <div id="groupMemberPicker" style="max-height:min(200px,32vh);overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:6px;"></div>
+        <div id="selectedMembersPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
       </div>
 
       <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:12px;font-size:1rem;letter-spacing:1px;" onclick="createGroup()">👥 KHỞI TẠO NHÓM</button>
@@ -2864,6 +2893,7 @@ function openCreateGroup() {
   document.getElementById('groupAvatarPreview').innerHTML = '<span style="font-size:1.8rem;">📷</span><span style="font-size:0.68rem;color:var(--text2);">Ảnh nhóm</span>';
   document.getElementById('selectedMemberCount').textContent = '(0/100)';
   renderGroupMemberPicker();
+  renderSelectedMembers();
   openModal('createGroupModal');
 }
 
@@ -3902,7 +3932,7 @@ async function openGroupMembers(groupId) {
           <div class="member-uname" style="color:${color};">${escHtml(displayName)} ${isSelf ? '<span style="color:var(--text2);font-size:0.72rem;">(Bạn)</span>' : ''}</div>
           <div class="member-role-tag" style="color:${roleColor};">${roleLabel} ${isOnline ? '• <span style="color:#00ff88;">Online</span>' : '• Offline'}</div>
         </div>
-        <div style="display:flex;gap:4px;flex-shrink:0;">${actionBtns}</div>
+        <div class="member-actions">${actionBtns}</div>
       </div>`;
   }).join('');
 
@@ -4131,9 +4161,11 @@ async function addMemberToGroup(userId, username) {
       <span class="modal-title" id="groupMembersTitle">👥 THÀNH VIÊN</span>
       <button class="modal-close" onclick="closeModal('groupMembersModal')">✕</button>
     </div>
-    <div style="margin-bottom:10px;font-size:0.8rem;color:var(--text2);" id="groupMembersCount"></div>
-    <div class="members-list" id="membersList"></div>
-    <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;" id="groupMembersActions"></div>
+    <div style="padding:14px 20px 20px;">
+      <div style="margin-bottom:10px;font-size:0.8rem;color:var(--text2);" id="groupMembersCount"></div>
+      <div class="members-list" id="membersList"></div>
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;" id="groupMembersActions"></div>
+    </div>
   </div>
 </div>
 
