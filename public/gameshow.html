@@ -325,17 +325,54 @@ function goCreate(){mode='host';$('setup-title').textContent='🏠 Tạo phòng 
 function goJoin(){mode='player';show('screen-join');}
 
 // ─── Gemini call (client-side) ───
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// Hiển thị trạng thái khi đang đợi thử lại sau 429
+function onGeminiRetry(model,secs){
+  const msg='⏳ Gemini bận (429) — đợi '+secs+'s rồi thử lại ('+model+')...';
+  const qc=$('q-content'); if(qc && mode==='single') qc.innerHTML='<span class="spinner"></span> '+msg;
+  const hh=$('ht-hint'); if(hh && mode==='host') hh.innerHTML='<span class="spinner"></span> '+msg;
+  toast(msg);
+}
+// Danh sách model thử lần lượt (quota free tier tính riêng từng model)
+const GEMINI_MODELS=['gemini-2.0-flash','gemini-2.5-flash','gemini-2.0-flash-lite','gemini-1.5-flash'];
+function parseRetryDelay(body){
+  try{const j=JSON.parse(body);const d=(j.error?.details||[]).find(x=>/RetryInfo/.test(x['@type']||''));
+    if(d&&d.retryDelay){const m=/(\d+(?:\.\d+)?)s/.exec(d.retryDelay);if(m)return Math.ceil(parseFloat(m[1])*1000);}}catch{}
+  return 0;
+}
+async function geminiRequest(key,model,payload){
+  const url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key);
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+}
 async function callGemini(key,topic){
   const prompt=$('su-prompt').value.replace(/\{\{TOPIC\}\}/g,topic||'kiến thức tổng hợp');
-  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(key);
-  const res=await fetch(url,{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      contents:[{parts:[{text:prompt}]}],
-      generationConfig:{temperature:1.0,responseMimeType:'application/json'}
-    })
-  });
-  if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('Gemini lỗi '+res.status+': '+t.slice(0,160));}
+  const payload={
+    contents:[{parts:[{text:prompt}]}],
+    generationConfig:{temperature:1.0,responseMimeType:'application/json'}
+  };
+  let res=null, lastErr='';
+  // Thử từng model; mỗi model retry tối đa 2 lần khi gặp 429
+  for(const model of GEMINI_MODELS){
+    let attempt=0;
+    while(attempt<3){
+      res=await geminiRequest(key,model,payload);
+      if(res.ok)break;
+      const body=await res.text().catch(()=>'');
+      if(res.status===429){
+        const wait=Math.min(parseRetryDelay(body)||(1500*(attempt+1)),8000);
+        lastErr='Vượt giới hạn (429)';
+        attempt++;
+        if(attempt<3){ if(typeof onGeminiRetry==='function')onGeminiRetry(model,Math.ceil(wait/1000)); await sleep(wait); continue; }
+        break; // hết retry cho model này → sang model kế
+      }
+      if(res.status===400&&/API key/i.test(body)) throw new Error('API key không hợp lệ. Kiểm tra lại key Gemini.');
+      throw new Error('Gemini lỗi '+res.status+': '+body.slice(0,160));
+    }
+    if(res&&res.ok)break;
+  }
+  if(!res||!res.ok){
+    throw new Error('Gemini 429 — vượt giới hạn quota/tốc độ trên mọi model. Hãy đợi ~1 phút rồi thử lại, hoặc dùng API key khác (free tier giới hạn số request mỗi phút/ngày). '+lastErr);
+  }
   const data=await res.json();
   let txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
   txt=txt.replace(/```json/gi,'').replace(/```/g,'').trim();
