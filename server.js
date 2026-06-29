@@ -70,6 +70,43 @@ let groups = [];
 let dbReady = false;
 const onlineSockets = new Map(); // socketId → userId
 
+// ─── Game Show (hỏi đáp) ──────────────────────────────────────────────────────
+// roomCode → { code, hostSocket, players: Map(socketId→{name,color,score}), currentQuestion }
+const gameRooms = new Map();
+
+// Bảng tiền "Ai là triệu phú" VN — 15 mốc, index 0..14 ứng với độ khó 1..15
+const MILLIONAIRE_PRIZES = [
+  200000, 400000, 600000, 1000000, 2000000,
+  3000000, 6000000, 10000000, 14000000, 22000000,
+  30000000, 40000000, 60000000, 85000000, 150000000
+];
+function prizeForDifficulty(d) {
+  const i = Math.max(1, Math.min(15, parseInt(d) || 1)) - 1;
+  return MILLIONAIRE_PRIZES[i];
+}
+function genRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code;
+  do {
+    code = Array.from({ length: 4 }, () => chars[crypto.randomInt(chars.length)]).join('');
+  } while (gameRooms.has(code));
+  return code;
+}
+function roomScoreboard(room) {
+  return [...room.players.entries()]
+    .map(([sid, p]) => ({ id: sid, name: p.name, color: p.color, score: p.score, isHost: sid === room.hostSocket }))
+    .sort((a, b) => b.score - a.score);
+}
+function broadcastScoreboard(code) {
+  const room = gameRooms.get(code);
+  if (room) io.to(code).emit('gs_scoreboard', roomScoreboard(room));
+}
+function normalizeAnswer(s) {
+  return String(s || '').trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
 async function initData() {
   try {
     await initDB();
@@ -183,7 +220,12 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type,x-token');
   next();
 });
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
+
+// Trang chủ + các trang chính
+app.get('/',         (req, res) => res.sendFile(path.join(__dirname, 'public', 'home.html')));
+app.get('/chat',     (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/gameshow', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gameshow.html')));
 
 function requireAuth(req, res, next) {
   const token = req.headers['x-token'];
@@ -834,8 +876,118 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('user_typing', { username: user.username, color: user.color });
   });
 
+  // ─── Game Show events ──────────────────────────────────────────────────────
+  socket.on('gs_create_room', ({ name, color }, cb) => {
+    const code = genRoomCode();
+    const room = {
+      code,
+      hostSocket: socket.id,
+      players: new Map(),
+      currentQuestion: null
+    };
+    room.players.set(socket.id, {
+      name: String(name || 'Quản trò').slice(0, 24),
+      color: color || '#00f5ff',
+      score: 0
+    });
+    gameRooms.set(code, room);
+    socket.join(code);
+    if (typeof cb === 'function') cb({ ok: true, code });
+    broadcastScoreboard(code);
+  });
+
+  socket.on('gs_join_room', ({ code, name, color }, cb) => {
+    code = String(code || '').toUpperCase().trim();
+    const room = gameRooms.get(code);
+    if (!room) {
+      if (typeof cb === 'function') cb({ ok: false, error: 'Phòng không tồn tại' });
+      return;
+    }
+    room.players.set(socket.id, {
+      name: String(name || 'Người chơi').slice(0, 24),
+      color: color || '#bf00ff',
+      score: 0
+    });
+    socket.join(code);
+    if (typeof cb === 'function') cb({ ok: true, code, isHost: room.hostSocket === socket.id });
+    // Nếu đang có câu hỏi dở, gửi luôn cho người mới (ẩn đáp án)
+    if (room.currentQuestion) {
+      const { correctAnswer, ...pub } = room.currentQuestion;
+      socket.emit('gs_question', pub);
+    }
+    broadcastScoreboard(code);
+  });
+
+  socket.on('gs_push_question', ({ code, question }) => {
+    const room = gameRooms.get(code);
+    if (!room || room.hostSocket !== socket.id || !question) return;
+    room.currentQuestion = {
+      topic: String(question.topic || '').slice(0, 80),
+      difficulty: Math.max(1, Math.min(15, parseInt(question.difficulty) || 1)),
+      type: question.type === 'essay' ? 'essay' : 'mc',
+      content: String(question.content || '').slice(0, 1000),
+      options: Array.isArray(question.options) ? question.options.slice(0, 4).map(o => String(o).slice(0, 300)) : [],
+      correctAnswer: String(question.correctAnswer || ''),
+      answered: new Set()
+    };
+    room.currentQuestion.points = prizeForDifficulty(room.currentQuestion.difficulty);
+    const { correctAnswer, answered, ...pub } = room.currentQuestion;
+    io.to(code).emit('gs_question', pub);
+    broadcastScoreboard(code);
+  });
+
+  socket.on('gs_answer', ({ code, answer }, cb) => {
+    const room = gameRooms.get(code);
+    if (!room || !room.currentQuestion) return;
+    const player = room.players.get(socket.id);
+    const q = room.currentQuestion;
+    if (!player || q.answered.has(socket.id)) {
+      if (typeof cb === 'function') cb({ ok: false, error: 'Đã trả lời rồi' });
+      return;
+    }
+    q.answered.add(socket.id);
+    let correct;
+    if (q.type === 'mc') {
+      correct = normalizeAnswer(answer) === normalizeAnswer(q.correctAnswer);
+    } else {
+      correct = normalizeAnswer(answer) === normalizeAnswer(q.correctAnswer);
+    }
+    if (correct) player.score += q.points;
+    if (typeof cb === 'function') cb({ ok: true, correct, points: correct ? q.points : 0 });
+    broadcastScoreboard(code);
+  });
+
+  socket.on('gs_reveal', ({ code }) => {
+    const room = gameRooms.get(code);
+    if (!room || room.hostSocket !== socket.id || !room.currentQuestion) return;
+    io.to(code).emit('gs_reveal', { correctAnswer: room.currentQuestion.correctAnswer });
+  });
+
+  socket.on('gs_leave_room', ({ code }) => {
+    leaveGameRoom(socket, code);
+  });
+
+  function leaveGameRoom(sock, code) {
+    const room = gameRooms.get(code);
+    if (!room) return;
+    room.players.delete(sock.id);
+    sock.leave(code);
+    if (room.players.size === 0) {
+      gameRooms.delete(code);
+      return;
+    }
+    // Nếu host rời, chuyển quyền host cho người còn lại đầu tiên
+    if (room.hostSocket === sock.id) {
+      room.hostSocket = room.players.keys().next().value;
+      io.to(room.hostSocket).emit('gs_host_granted');
+    }
+    broadcastScoreboard(code);
+  }
+
   socket.on('disconnect', () => {
     onlineSockets.delete(socket.id);
+    // Gỡ khỏi mọi phòng game show đang tham gia
+    for (const code of [...gameRooms.keys()]) leaveGameRoom(socket, code);
     broadcastOnline();
     broadcastUsers();
   });

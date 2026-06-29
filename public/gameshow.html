@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>🎮 Neon Game Show</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#bf00ff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06080f; --bg2:#0b0f1e; --bg3:#111827; --panel:rgba(8,14,35,.92);
+  --cyan:#00f5ff; --pink:#ff007f; --purple:#bf00ff; --green:#00ff88; --yellow:#ffcc00; --red:#ff3b5c;
+  --text:#c8d8ff; --text2:#7888bb; --border:rgba(0,245,255,.18); --border2:rgba(191,0,255,.25);
+  --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Rajdhani',sans-serif; font-size:15px;
+  min-height:100vh; overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(191,0,255,.13), transparent 42%),
+    radial-gradient(circle at 85% 90%, rgba(0,245,255,.13), transparent 42%);
+}
+.app{position:relative; z-index:1; max-width:880px; margin:0 auto; padding:18px 16px 60px;}
+
+h1,h2,h3{font-family:'Orbitron',sans-serif}
+.neon-c{color:var(--cyan); text-shadow:0 0 8px var(--cyan)}
+.neon-p{color:var(--purple); text-shadow:0 0 8px var(--purple)}
+
+/* ── screens ── */
+.screen{display:none; animation:fade .3s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0; transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── top bar ── */
+.topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; gap:10px; flex-wrap:wrap}
+.brand{font-family:'Orbitron',sans-serif; font-weight:900; font-size:clamp(20px,5vw,30px);
+  background:linear-gradient(90deg,var(--cyan),var(--purple),var(--pink));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 12px rgba(191,0,255,.4)); letter-spacing:2px}
+.roomtag{font-family:'Orbitron'; font-weight:700; color:var(--yellow); text-shadow:0 0 8px var(--yellow);
+  border:1px solid rgba(255,204,0,.4); border-radius:8px; padding:5px 12px; font-size:15px; letter-spacing:2px}
+
+/* ── buttons ── */
+.btn{font-family:'Orbitron',sans-serif; font-weight:700; letter-spacing:.5px; cursor:pointer;
+  border-radius:10px; border:1.5px solid var(--border); background:var(--panel); color:var(--text);
+  padding:12px 18px; font-size:14px; transition:transform .15s, box-shadow .15s, border-color .15s, background .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn:disabled{opacity:.45; cursor:not-allowed; transform:none}
+.btn.cyan{border-color:rgba(0,245,255,.5)} .btn.cyan:hover{box-shadow:0 0 20px rgba(0,245,255,.4);color:var(--cyan)}
+.btn.purple{border-color:rgba(191,0,255,.55)} .btn.purple:hover{box-shadow:0 0 20px rgba(191,0,255,.45);color:var(--purple)}
+.btn.green{border-color:rgba(0,255,136,.5)} .btn.green:hover{box-shadow:0 0 20px rgba(0,255,136,.4);color:var(--green)}
+.btn.pink{border-color:rgba(255,0,127,.5)} .btn.pink:hover{box-shadow:0 0 20px rgba(255,0,127,.4);color:var(--pink)}
+.btn.ghost{background:transparent;border-color:var(--border2)}
+.btn.block{width:100%}
+
+/* ── menu ── */
+.menu-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:30px}
+.menu-card{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
+  padding:30px 16px;border-radius:var(--r);cursor:pointer;background:var(--panel);
+  border:1.5px solid var(--border);transition:transform .18s,box-shadow .18s,border-color .18s}
+.menu-card .ico{font-size:46px}
+.menu-card .t{font-family:'Orbitron';font-weight:700;font-size:16px}
+.menu-card .d{font-size:13px;color:var(--text2)}
+.menu-card:hover{transform:translateY(-6px)}
+.menu-card.c1:hover{border-color:var(--cyan);box-shadow:0 0 26px rgba(0,245,255,.4)}
+.menu-card.c2:hover{border-color:var(--green);box-shadow:0 0 26px rgba(0,255,136,.4)}
+.menu-card.c3:hover{border-color:var(--purple);box-shadow:0 0 26px rgba(191,0,255,.45)}
+.menu-intro{text-align:center;color:var(--text2);margin-top:6px;font-size:16px;letter-spacing:1px}
+
+/* ── panels / forms ── */
+.panel{background:var(--panel);border:1.5px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:18px}
+.panel h2{font-size:18px;margin-bottom:14px;color:var(--cyan);text-shadow:0 0 8px var(--cyan)}
+label.fld{display:block;margin-bottom:14px}
+label.fld .lab{display:block;font-weight:600;color:var(--text2);margin-bottom:6px;font-size:13px;letter-spacing:.5px;text-transform:uppercase}
+input,textarea,select{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;
+  color:var(--text);font-family:'Rajdhani';font-size:15px;padding:11px 13px;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,245,255,.25)}
+textarea{resize:vertical;min-height:120px;line-height:1.5}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>*{flex:1;min-width:0}
+.color-row{display:flex;gap:8px;align-items:center}
+.color-row input[type=color]{width:46px;height:42px;padding:3px;flex:0 0 auto;cursor:pointer}
+
+/* ── scoreboard ── */
+.scoreboard{background:var(--panel);border:1.5px solid var(--border2);border-radius:var(--r);padding:14px 16px;margin-bottom:16px}
+.scoreboard h3{font-size:14px;color:var(--purple);text-shadow:0 0 8px var(--purple);margin-bottom:10px;letter-spacing:1px;display:flex;justify-content:space-between}
+.sb-list{display:flex;flex-direction:column;gap:7px}
+.sb-row{display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:8px;background:var(--bg2);border:1px solid var(--border)}
+.sb-rank{font-family:'Orbitron';font-weight:700;width:22px;text-align:center;color:var(--text2)}
+.sb-rank.r1{color:var(--yellow);text-shadow:0 0 8px var(--yellow)}
+.sb-dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 8px currentColor}
+.sb-name{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-host{font-size:11px;color:var(--yellow);border:1px solid rgba(255,204,0,.4);border-radius:5px;padding:1px 6px}
+.sb-score{font-family:'Orbitron';font-weight:700;color:var(--green);text-shadow:0 0 8px var(--green)}
+
+/* ── question card ── */
+.q-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.chip{font-family:'Orbitron';font-weight:700;font-size:12.5px;letter-spacing:.5px;padding:6px 12px;border-radius:20px;border:1.5px solid}
+.chip.topic{color:var(--cyan);border-color:rgba(0,245,255,.5);background:rgba(0,245,255,.07)}
+.chip.points{color:var(--yellow);border-color:rgba(255,204,0,.5);background:rgba(255,204,0,.07)}
+.q-content{font-size:clamp(18px,4.6vw,24px);font-weight:600;line-height:1.45;margin:6px 0 20px;color:#eaf2ff}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;padding:14px 16px;border-radius:10px;cursor:pointer;
+  background:var(--bg2);border:1.5px solid var(--border);transition:.15s;font-family:'Rajdhani';font-size:16px;color:var(--text)}
+.opt .key{font-family:'Orbitron';font-weight:700;width:30px;height:30px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  border-radius:7px;background:var(--bg3);border:1px solid var(--border);color:var(--cyan)}
+.opt:hover:not(.locked){border-color:var(--cyan);box-shadow:0 0 16px rgba(0,245,255,.3)}
+.opt.sel{border-color:var(--purple);box-shadow:0 0 18px rgba(191,0,255,.4)}
+.opt.sel .key{background:var(--purple);color:#fff;border-color:var(--purple)}
+.opt.correct{border-color:var(--green);box-shadow:0 0 18px rgba(0,255,136,.5);background:rgba(0,255,136,.1)}
+.opt.wrong{border-color:var(--red);box-shadow:0 0 18px rgba(255,59,92,.4);background:rgba(255,59,92,.1)}
+.opt.locked{cursor:default}
+.essay-wrap input{font-size:17px;padding:14px}
+.feedback{margin-top:16px;font-family:'Orbitron';font-weight:700;font-size:16px;text-align:center;min-height:24px}
+.feedback.ok{color:var(--green);text-shadow:0 0 10px var(--green)}
+.feedback.no{color:var(--red);text-shadow:0 0 10px var(--red)}
+.actions{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
+.actions .btn{flex:1;min-width:130px}
+
+.host-tools{border-color:var(--border2)}
+.host-tools h2{color:var(--purple);text-shadow:0 0 8px var(--purple)}
+.muted{color:var(--text2);font-size:13px}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--panel);border:1.5px solid var(--cyan);
+  color:var(--text);padding:12px 20px;border-radius:10px;z-index:50;box-shadow:0 0 24px rgba(0,245,255,.4);
+  font-weight:600;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+.hidden{display:none!important}
+
+@media(max-width:640px){
+  .menu-grid{grid-template-columns:1fr}
+  .opts{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">🎮 NEON GAME SHOW</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="roomtag" class="roomtag hidden"></span>
+      <a class="btn ghost" href="/" style="text-decoration:none">⌂ Trang chủ</a>
+    </div>
+  </div>
+
+  <!-- ══ MENU ══ -->
+  <section id="screen-menu" class="screen active">
+    <p class="menu-intro">Chọn chế độ chơi — đấu trí hỏi đáp do AI dẫn dắt</p>
+    <div class="menu-grid">
+      <div class="menu-card c3" onclick="goCreate()">
+        <span class="ico">🏠</span><span class="t">Tạo phòng</span>
+        <span class="d">Làm quản trò, mời bạn bè vào thi đấu</span>
+      </div>
+      <div class="menu-card c2" onclick="goSingle()">
+        <span class="ico">🎯</span><span class="t">Chơi đơn</span>
+        <span class="d">Tự luyện tập một mình với AI</span>
+      </div>
+      <div class="menu-card c1" onclick="goJoin()">
+        <span class="ico">🌐</span><span class="t">Chơi mạng</span>
+        <span class="d">Nhập mã phòng để tham gia</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SETUP (single / host) ══ -->
+  <section id="screen-setup" class="screen">
+    <div class="panel">
+      <h2 id="setup-title">⚙️ Thiết lập</h2>
+
+      <div id="host-identity">
+        <div class="row">
+          <label class="fld"><span class="lab">Tên hiển thị</span>
+            <input id="su-name" placeholder="Tên quản trò" maxlength="24"></label>
+          <label class="fld" style="flex:0 0 110px"><span class="lab">Màu</span>
+            <div class="color-row"><input id="su-color" type="color" value="#bf00ff"></div></label>
+        </div>
+      </div>
+
+      <label class="fld"><span class="lab">🔑 Gemini API Key</span>
+        <input id="su-key" type="password" placeholder="Dán API key của Gemini..." autocomplete="off"></label>
+
+      <label class="fld"><span class="lab">📚 Chủ đề câu hỏi</span>
+        <input id="su-topic" placeholder="VD: địa lý Việt Nam, đố mẹo dân gian, lịch sử..." value="kiến thức tổng hợp Việt Nam"></label>
+
+      <label class="fld"><span class="lab">🤖 Prompt cho AI (quản trò)</span>
+        <textarea id="su-prompt"></textarea></label>
+
+      <div class="row" id="single-extra">
+        <label class="fld"><span class="lab">Số câu hỏi (chơi đơn)</span>
+          <input id="su-count" type="number" min="1" max="50" value="10"></label>
+      </div>
+
+      <div class="actions">
+        <button class="btn ghost" onclick="show('screen-menu')">← Quay lại</button>
+        <button id="su-start" class="btn green" onclick="startFromSetup()">Bắt đầu →</button>
+      </div>
+      <p id="setup-hint" class="muted" style="margin-top:10px"></p>
+    </div>
+  </section>
+
+  <!-- ══ JOIN ══ -->
+  <section id="screen-join" class="screen">
+    <div class="panel" style="max-width:460px;margin:30px auto 0">
+      <h2>🌐 Vào phòng</h2>
+      <div class="row">
+        <label class="fld"><span class="lab">Tên hiển thị</span>
+          <input id="jn-name" placeholder="Tên của bạn" maxlength="24"></label>
+        <label class="fld" style="flex:0 0 110px"><span class="lab">Màu</span>
+          <div class="color-row"><input id="jn-color" type="color" value="#00f5ff"></div></label>
+      </div>
+      <label class="fld"><span class="lab">🔢 Mã phòng</span>
+        <input id="jn-code" placeholder="VD: AB12" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-family:'Orbitron';font-size:20px;text-align:center"></label>
+      <div class="actions">
+        <button class="btn ghost" onclick="show('screen-menu')">← Quay lại</button>
+        <button class="btn cyan" onclick="doJoin()">Tham gia →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ GAME ══ -->
+  <section id="screen-game" class="screen">
+    <div class="scoreboard">
+      <h3><span>🏆 BẢNG ĐIỂM</span><span id="sb-mode" class="muted"></span></h3>
+      <div id="sb-list" class="sb-list"></div>
+    </div>
+
+    <!-- host tools -->
+    <div id="host-tools" class="panel host-tools hidden">
+      <h2>🎤 Bàn quản trò</h2>
+      <label class="fld"><span class="lab">📚 Chủ đề</span>
+        <input id="ht-topic" placeholder="Chủ đề câu hỏi"></label>
+      <div class="actions">
+        <button id="ht-gen" class="btn purple" onclick="hostGenerate()">✨ Tạo câu hỏi mới</button>
+        <button id="ht-reveal" class="btn pink" onclick="hostReveal()" disabled>👁 Hiện đáp án</button>
+      </div>
+      <p class="muted" id="ht-hint" style="margin-top:8px">Bấm "Tạo câu hỏi mới" để AI sinh câu hỏi và gửi tới mọi người.</p>
+    </div>
+
+    <!-- question card -->
+    <div id="q-card" class="panel hidden">
+      <div class="q-meta">
+        <span class="chip topic" id="q-topic">—</span>
+        <span class="chip points" id="q-points">—</span>
+        <span class="chip" id="q-diff" style="color:var(--purple);border-color:var(--border2)">—</span>
+      </div>
+      <div class="q-content" id="q-content"></div>
+      <div id="q-answer"></div>
+      <div class="feedback" id="q-feedback"></div>
+      <div class="actions" id="q-actions">
+        <button id="q-submit" class="btn green" onclick="submitAnswer()">Gửi đáp án</button>
+        <button id="q-next" class="btn cyan hidden" onclick="nextQuestion()">Câu tiếp theo →</button>
+      </div>
+    </div>
+
+    <!-- waiting (player) -->
+    <div id="waiting" class="panel hidden" style="text-align:center">
+      <p class="muted" style="font-size:16px">⏳ Đang chờ quản trò ra câu hỏi...</p>
+    </div>
+
+    <div class="actions" style="margin-top:6px">
+      <button class="btn ghost" onclick="leaveGame()">⬅ Rời trận</button>
+    </div>
+  </section>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────
+// Bảng tiền "Ai là triệu phú" VN — độ khó 1..15
+const PRIZES=[200000,400000,600000,1000000,2000000,3000000,6000000,10000000,14000000,22000000,30000000,40000000,60000000,85000000,150000000];
+const prizeFor=d=>PRIZES[Math.max(1,Math.min(15,parseInt(d)||1))-1];
+const fmt=n=>Number(n).toLocaleString('vi-VN');
+
+const DEFAULT_PROMPT=
+`Bạn là người quản trò của một game show hỏi đáp tiếng Việt theo phong cách "Ai là triệu phú".
+Hãy tạo MỘT câu hỏi mới, thú vị về chủ đề: {{TOPIC}}.
+Quy tắc:
+- Loại câu hỏi: ngẫu nhiên là trắc nghiệm ("mc") hoặc tự luận ("essay").
+- Nếu trắc nghiệm: đưa ra 4 phương án, chỉ 1 phương án đúng.
+- Nếu tự luận: đáp án ngắn gọn (một từ hoặc một cụm từ).
+- Tự đánh giá độ khó từ 1 (rất dễ) đến 15 (cực khó) theo thang Ai là triệu phú.
+- Không lặp lại câu hỏi đã hỏi.
+Chỉ trả về DUY NHẤT một JSON hợp lệ, không kèm giải thích, theo đúng cấu trúc:
+{"topic":"<chủ đề ngắn>","difficulty":<1-15>,"type":"mc"|"essay","content":"<nội dung câu hỏi>","options":["<A>","<B>","<C>","<D>"],"correctAnswer":"<đáp án đúng; với mc là nội dung phương án đúng>"}
+Với câu tự luận, "options" để là mảng rỗng [].`;
+
+// ─── state ───
+let mode=null;            // 'single' | 'host' | 'player'
+let socket=null;
+let roomCode=null;
+let isHost=false;
+let currentQ=null;       // {topic,difficulty,points,type,content,options,correctAnswer?}
+let selectedOpt=null;
+let answered=false;
+// single mode
+let singleScore=0, singleAsked=0, singleTotal=10, singleName='Bạn', singleColor='#00ff88';
+
+// ─── helpers ───
+const $=id=>document.getElementById(id);
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');window.scrollTo(0,0);}
+let toastT=null;
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+
+// prefill name from chat user if logged in
+try{const cu=JSON.parse(localStorage.getItem('nc_user')||'null');if(cu&&cu.username){singleName=cu.username;if(cu.color)singleColor=cu.color;}}catch{}
+$('su-prompt').value=DEFAULT_PROMPT;
+$('su-key').value=localStorage.getItem('gemini_key')||'';
+$('su-name').value=singleName!=='Bạn'?singleName:'';
+$('jn-name').value=singleName!=='Bạn'?singleName:'';
+
+// ─── menu navigation ───
+function goSingle(){mode='single';$('setup-title').textContent='🎯 Chơi đơn';$('host-identity').classList.add('hidden');$('single-extra').classList.remove('hidden');$('setup-hint').textContent='Cần Gemini API key để AI sinh câu hỏi.';show('screen-setup');}
+function goCreate(){mode='host';$('setup-title').textContent='🏠 Tạo phòng (quản trò)';$('host-identity').classList.remove('hidden');$('single-extra').classList.add('hidden');$('setup-hint').textContent='Bạn là quản trò: cần Gemini API key để tạo câu hỏi cho cả phòng.';show('screen-setup');}
+function goJoin(){mode='player';show('screen-join');}
+
+// ─── Gemini call (client-side) ───
+async function callGemini(key,topic){
+  const prompt=$('su-prompt').value.replace(/\{\{TOPIC\}\}/g,topic||'kiến thức tổng hợp');
+  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(key);
+  const res=await fetch(url,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents:[{parts:[{text:prompt}]}],
+      generationConfig:{temperature:1.0,responseMimeType:'application/json'}
+    })
+  });
+  if(!res.ok){const t=await res.text().catch(()=>'');throw new Error('Gemini lỗi '+res.status+': '+t.slice(0,160));}
+  const data=await res.json();
+  let txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  txt=txt.replace(/```json/gi,'').replace(/```/g,'').trim();
+  let q;
+  try{q=JSON.parse(txt);}catch{const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('Không đọc được JSON từ AI');q=JSON.parse(m[0]);}
+  // validate / normalize
+  q.type=q.type==='essay'?'essay':'mc';
+  q.difficulty=Math.max(1,Math.min(15,parseInt(q.difficulty)||1));
+  q.options=Array.isArray(q.options)?q.options.map(String).filter(Boolean).slice(0,4):[];
+  q.content=String(q.content||'').trim();
+  q.correctAnswer=String(q.correctAnswer||'').trim();
+  q.topic=String(q.topic||topic||'').trim();
+  if(q.type==='mc'&&q.options.length<2)throw new Error('AI trả về thiếu phương án');
+  if(!q.content||!q.correctAnswer)throw new Error('AI trả về câu hỏi không hợp lệ');
+  q.points=prizeFor(q.difficulty);
+  return q;
+}
+
+// ─── start from setup ───
+async function startFromSetup(){
+  const key=$('su-key').value.trim();
+  if(!key){toast('⚠️ Hãy nhập Gemini API key');return;}
+  localStorage.setItem('gemini_key',key);
+  const topic=$('su-topic').value.trim()||'kiến thức tổng hợp Việt Nam';
+  if(mode==='single'){
+    singleTotal=Math.max(1,Math.min(50,parseInt($('su-count').value)||10));
+    singleScore=0;singleAsked=0;
+    enterGame();
+    renderScoreboard([{name:singleName,color:singleColor,score:0}]);
+    await generateAndShowLocal(topic);
+  }else if(mode==='host'){
+    singleName=$('su-name').value.trim()||'Quản trò';
+    singleColor=$('su-color').value;
+    connectSocket();
+    socket.emit('gs_create_room',{name:singleName,color:singleColor},resp=>{
+      if(!resp||!resp.ok){toast('Không tạo được phòng');return;}
+      roomCode=resp.code;isHost=true;
+      enterGame();
+      $('ht-topic').value=topic;
+      toast('Phòng đã tạo: '+roomCode);
+    });
+  }
+}
+
+// ─── join ───
+function doJoin(){
+  const name=$('jn-name').value.trim()||'Người chơi';
+  const color=$('jn-color').value;
+  const code=$('jn-code').value.trim().toUpperCase();
+  if(code.length<3){toast('⚠️ Nhập mã phòng hợp lệ');return;}
+  singleName=name;singleColor=color;
+  connectSocket();
+  socket.emit('gs_join_room',{code,name,color},resp=>{
+    if(!resp||!resp.ok){toast('❌ '+((resp&&resp.error)||'Không vào được phòng'));return;}
+    roomCode=resp.code;isHost=!!resp.isHost;
+    enterGame();
+    toast('Đã vào phòng '+roomCode);
+  });
+}
+
+// ─── socket ───
+function connectSocket(){
+  if(socket)return;
+  socket=io();
+  socket.on('gs_scoreboard',renderScoreboard);
+  socket.on('gs_question',q=>{currentQ=q;answered=false;selectedOpt=null;showQuestion(q);if(!isHost){$('waiting').classList.add('hidden');}});
+  socket.on('gs_reveal',({correctAnswer})=>revealAnswer(correctAnswer));
+  socket.on('gs_host_granted',()=>{isHost=true;$('host-tools').classList.remove('hidden');toast('Bạn trở thành quản trò');});
+}
+
+// ─── enter game screen ───
+function enterGame(){
+  show('screen-game');
+  const net=mode!=='single';
+  $('roomtag').classList.toggle('hidden',!net);
+  if(net)$('roomtag').textContent='PHÒNG '+roomCode;
+  $('sb-mode').textContent=net?(isHost?'· bạn là quản trò':'· người chơi'):'· chơi đơn';
+  $('host-tools').classList.toggle('hidden',mode!=='host');
+  $('q-card').classList.add('hidden');
+  $('waiting').classList.toggle('hidden',mode!=='player');
+}
+
+// ─── scoreboard ───
+function renderScoreboard(list){
+  const el=$('sb-list');el.innerHTML='';
+  list.forEach((p,i)=>{
+    const row=document.createElement('div');row.className='sb-row';
+    row.innerHTML=`<span class="sb-rank ${i===0?'r1':''}">${i+1}</span>
+      <span class="sb-dot" style="color:${p.color||'#888'}"></span>
+      <span class="sb-name">${esc(p.name)}</span>
+      ${p.isHost?'<span class="sb-host">QT</span>':''}
+      <span class="sb-score">${fmt(p.score)}</span>`;
+    el.appendChild(row);
+  });
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+// ─── render a question ───
+function showQuestion(q){
+  answered=false;selectedOpt=null;
+  $('q-card').classList.remove('hidden');
+  $('waiting').classList.add('hidden');
+  $('q-feedback').className='feedback';$('q-feedback').textContent='';
+  $('q-topic').textContent='📚 '+(q.topic||'—');
+  $('q-points').textContent='💰 '+fmt(q.points||prizeFor(q.difficulty))+' đ';
+  $('q-diff').textContent='Độ khó '+(q.difficulty||1)+'/15';
+  $('q-content').textContent=q.content||'';
+  const ans=$('q-answer');ans.innerHTML='';
+  if(q.type==='mc'){
+    const grid=document.createElement('div');grid.className='opts';
+    const keys=['A','B','C','D'];
+    (q.options||[]).forEach((o,i)=>{
+      const b=document.createElement('div');b.className='opt';b.dataset.val=o;
+      b.innerHTML=`<span class="key">${keys[i]}</span><span>${esc(o)}</span>`;
+      b.onclick=()=>{if(answered)return;grid.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');selectedOpt=o;};
+      grid.appendChild(b);
+    });
+    ans.appendChild(grid);
+  }else{
+    const w=document.createElement('div');w.className='essay-wrap';
+    w.innerHTML='<input id="essay-in" placeholder="Nhập câu trả lời của bạn..." autocomplete="off">';
+    ans.appendChild(w);
+    const inp=w.querySelector('#essay-in');
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')submitAnswer();});
+  }
+  // buttons: players & single answer; host doesn't answer
+  const canAnswer=(mode==='single')||(mode==='player')||(mode==='host'&&false);
+  $('q-submit').classList.toggle('hidden',!canAnswer);
+  $('q-submit').disabled=false;
+  $('q-next').classList.add('hidden');
+  if(mode==='host'){$('ht-reveal').disabled=false;$('ht-gen').disabled=false;}
+}
+
+// ─── submit answer ───
+function submitAnswer(){
+  if(answered||!currentQ)return;
+  let val;
+  if(currentQ.type==='mc'){if(selectedOpt==null){toast('Chọn một đáp án');return;}val=selectedOpt;}
+  else{val=($('essay-in')?.value||'').trim();if(!val){toast('Nhập câu trả lời');return;}}
+  answered=true;$('q-submit').disabled=true;lockOptions();
+
+  if(mode==='single'){
+    const ok=norm(val)===norm(currentQ.correctAnswer);
+    if(ok){singleScore+=currentQ.points;}
+    renderScoreboard([{name:singleName,color:singleColor,score:singleScore}]);
+    revealAnswer(currentQ.correctAnswer,ok);
+    showNextOrEnd();
+  }else if(mode==='player'){
+    socket.emit('gs_answer',{code:roomCode,answer:val},resp=>{
+      if(!resp||!resp.ok){toast((resp&&resp.error)||'Lỗi gửi đáp án');answered=true;return;}
+      const fb=$('q-feedback');fb.className='feedback '+(resp.correct?'ok':'no');
+      fb.textContent=resp.correct?('✅ Chính xác! +'+fmt(resp.points)+' điểm'):'❌ Chưa đúng — chờ quản trò công bố';
+      if(resp.correct)markCorrect(val);
+    });
+  }
+}
+
+function norm(s){return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ');}
+function lockOptions(){document.querySelectorAll('.opt').forEach(o=>o.classList.add('locked'));}
+function markCorrect(val){document.querySelectorAll('.opt').forEach(o=>{if(norm(o.dataset.val)===norm(val))o.classList.add('correct');});}
+
+function revealAnswer(correct,ok){
+  if(currentQ&&currentQ.type==='mc'){
+    document.querySelectorAll('.opt').forEach(o=>{
+      o.classList.add('locked');
+      if(norm(o.dataset.val)===norm(correct))o.classList.add('correct');
+      else if(o.classList.contains('sel'))o.classList.add('wrong');
+    });
+  }
+  const fb=$('q-feedback');
+  if(ok!==undefined){fb.className='feedback '+(ok?'ok':'no');fb.textContent=ok?('✅ Chính xác! +'+fmt(currentQ.points)+' điểm'):('❌ Sai. Đáp án đúng: '+correct);}
+  else{fb.className='feedback ok';fb.textContent='💡 Đáp án đúng: '+correct;}
+  $('q-submit').disabled=true;answered=true;
+}
+
+// ─── single: next / end ───
+function showNextOrEnd(){
+  singleAsked++;
+  if(singleAsked>=singleTotal){
+    setTimeout(()=>{
+      $('q-content').textContent='🏁 Kết thúc! Tổng điểm: '+fmt(singleScore)+' / qua '+singleTotal+' câu.';
+      $('q-answer').innerHTML='';$('q-feedback').textContent='';
+      $('q-submit').classList.add('hidden');
+      $('q-next').classList.remove('hidden');$('q-next').textContent='🔄 Chơi lại';
+      $('q-next').onclick=()=>{singleScore=0;singleAsked=0;renderScoreboard([{name:singleName,color:singleColor,score:0}]);$('q-next').onclick=nextQuestion;generateAndShowLocal($('su-topic').value.trim());};
+    },400);
+  }else{
+    $('q-next').classList.remove('hidden');
+  }
+}
+function nextQuestion(){
+  if(mode==='single'){generateAndShowLocal($('su-topic').value.trim());}
+}
+async function generateAndShowLocal(topic){
+  const key=localStorage.getItem('gemini_key');
+  $('q-card').classList.remove('hidden');
+  $('q-content').innerHTML='<span class="spinner"></span> AI đang nghĩ câu hỏi...';
+  $('q-answer').innerHTML='';$('q-feedback').textContent='';
+  $('q-submit').classList.add('hidden');$('q-next').classList.add('hidden');
+  try{
+    const q=await callGemini(key,topic);
+    currentQ=q;showQuestion(q);
+  }catch(e){
+    $('q-content').textContent='⚠️ '+e.message;
+    $('q-next').classList.remove('hidden');$('q-next').textContent='Thử lại';
+  }
+}
+
+// ─── host actions ───
+async function hostGenerate(){
+  const key=localStorage.getItem('gemini_key');
+  const topic=$('ht-topic').value.trim()||'kiến thức tổng hợp';
+  $('ht-gen').disabled=true;$('ht-hint').innerHTML='<span class="spinner"></span> AI đang tạo câu hỏi...';
+  try{
+    const q=await callGemini(key,topic);
+    socket.emit('gs_push_question',{code:roomCode,question:q});
+    $('ht-hint').textContent='Đã gửi câu hỏi tới phòng. Mọi người đang trả lời.';
+  }catch(e){
+    $('ht-hint').textContent='⚠️ '+e.message;
+  }
+  $('ht-gen').disabled=false;
+}
+function hostReveal(){
+  if(!roomCode)return;
+  socket.emit('gs_reveal',{code:roomCode});
+}
+
+// ─── leave ───
+function leaveGame(){
+  if(socket&&roomCode){socket.emit('gs_leave_room',{code:roomCode});}
+  roomCode=null;isHost=false;currentQ=null;mode=null;
+  show('screen-menu');
+}
+</script>
+</body>
+</html>

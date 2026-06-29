@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>⚡ Neon Chat</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00f5ff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06080f; --bg2:#0b0f1e; --panel:rgba(8,14,35,.92);
+  --cyan:#00f5ff; --pink:#ff007f; --purple:#bf00ff; --green:#00ff88;
+  --text:#c8d8ff; --text2:#7888bb; --border:rgba(0,245,255,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  min-height:100vh; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+/* nền lưới neon */
+body::before{
+  content:""; position:fixed; inset:0; z-index:0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(191,0,255,.15), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(0,245,255,.15), transparent 40%),
+    linear-gradient(rgba(0,245,255,.04) 1px,transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg,rgba(0,245,255,.04) 1px,transparent 1px) 0 0/40px 40px;
+  animation:drift 20s linear infinite;
+}
+@keyframes drift{to{background-position:0 0,0 0,40px 40px,40px 40px}}
+
+.wrap{position:relative;z-index:1;text-align:center;padding:24px;width:100%;max-width:560px}
+
+.logo{
+  font-family:'Orbitron',sans-serif; font-weight:900;
+  font-size:clamp(48px,14vw,108px); line-height:1; letter-spacing:4px;
+  background:linear-gradient(90deg,var(--cyan),var(--purple),var(--pink));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 0 20px rgba(0,245,255,.5));
+  animation:pulse 3s ease-in-out infinite;
+}
+@keyframes pulse{50%{filter:drop-shadow(0 0 38px rgba(191,0,255,.7))}}
+.sub{
+  font-family:'Orbitron',sans-serif; font-weight:700;
+  letter-spacing:8px; color:var(--cyan); text-shadow:0 0 10px var(--cyan);
+  font-size:clamp(13px,3.4vw,20px); margin-top:6px;
+}
+.tag{color:var(--text2); margin-top:14px; font-size:clamp(13px,3.2vw,17px); letter-spacing:1px}
+
+.btns{display:flex; gap:18px; justify-content:center; margin-top:42px; flex-wrap:wrap}
+.btn{
+  flex:1 1 200px; max-width:240px;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  padding:24px 18px; border-radius:14px; cursor:pointer;
+  font-family:'Orbitron',sans-serif; font-weight:700; font-size:17px; letter-spacing:1px;
+  color:var(--text); text-decoration:none;
+  background:var(--panel); border:1.5px solid var(--border);
+  transition:transform .18s, box-shadow .18s, border-color .18s;
+}
+.btn .ico{font-size:40px; line-height:1}
+.btn .desc{font-family:'Rajdhani',sans-serif; font-weight:500; font-size:13px; color:var(--text2); letter-spacing:0}
+.btn.chat{border-color:rgba(0,245,255,.5)}
+.btn.chat:hover{transform:translateY(-6px); box-shadow:0 0 28px rgba(0,245,255,.45); border-color:var(--cyan); color:var(--cyan)}
+.btn.game{border-color:rgba(191,0,255,.5)}
+.btn.game:hover{transform:translateY(-6px); box-shadow:0 0 28px rgba(191,0,255,.5); border-color:var(--purple); color:var(--purple)}
+
+.foot{margin-top:40px;color:var(--text2);font-size:12px;letter-spacing:1px}
+
+@media(max-width:430px){
+  .btns{flex-direction:column; gap:14px}
+  .btn{max-width:none; flex-direction:row; justify-content:flex-start; text-align:left; padding:18px 22px}
+  .btn .ico{font-size:32px}
+  .btn .desc{display:block}
+}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo">⚡NEON</div>
+    <div class="sub">CHAT</div>
+    <div class="tag">Trò chuyện cyberpunk &amp; sân chơi hỏi đáp</div>
+
+    <div class="btns">
+      <a class="btn chat" href="/chat">
+        <span class="ico">💬</span>
+        <span>Chat ngay</span>
+        <span class="desc">Vào phòng chat trực tiếp</span>
+      </a>
+      <a class="btn game" href="/gameshow">
+        <span class="ico">🎮</span>
+        <span>Game Show</span>
+        <span class="desc">Đấu trí hỏi đáp với AI</span>
+      </a>
+    </div>
+
+    <div class="foot">⚡ NEON CHAT — v1.0</div>
+  </div>
+</body>
+</html>
