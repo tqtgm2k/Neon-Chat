@@ -188,6 +188,9 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
       <label class="fld"><span class="lab">🔑 Gemini API Key</span>
         <input id="su-key" type="password" placeholder="Dán API key của Gemini..." autocomplete="off"></label>
 
+      <label class="fld"><span class="lab">🧠 Model AI</span>
+        <select id="su-model"></select></label>
+
       <label class="fld"><span class="lab">📚 Chủ đề câu hỏi</span>
         <input id="su-topic" placeholder="VD: địa lý Việt Nam, đố mẹo dân gian, lịch sử..." value="kiến thức tổng hợp Việt Nam"></label>
 
@@ -236,8 +239,12 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
     <!-- host tools -->
     <div id="host-tools" class="panel host-tools hidden">
       <h2>🎤 Bàn quản trò</h2>
-      <label class="fld"><span class="lab">📚 Chủ đề</span>
-        <input id="ht-topic" placeholder="Chủ đề câu hỏi"></label>
+      <div class="row">
+        <label class="fld"><span class="lab">📚 Chủ đề</span>
+          <input id="ht-topic" placeholder="Chủ đề câu hỏi"></label>
+        <label class="fld"><span class="lab">🧠 Model AI</span>
+          <select id="ht-model"></select></label>
+      </div>
       <div class="actions">
         <button id="ht-gen" class="btn purple" onclick="hostGenerate()">✨ Tạo câu hỏi mới</button>
         <button id="ht-reveal" class="btn pink" onclick="hostReveal()" disabled>👁 Hiện đáp án</button>
@@ -335,6 +342,36 @@ function onGeminiRetry(model,secs){
 }
 // Danh sách model thử lần lượt (quota free tier tính riêng từng model)
 const GEMINI_MODELS=['gemini-2.0-flash','gemini-2.5-flash','gemini-2.0-flash-lite','gemini-1.5-flash'];
+const MODEL_LABELS={
+  'gemini-2.0-flash':'Gemini 2.0 Flash (nhanh, cân bằng)',
+  'gemini-2.5-flash':'Gemini 2.5 Flash (thông minh hơn)',
+  'gemini-2.0-flash-lite':'Gemini 2.0 Flash-Lite (nhẹ, ít tốn quota)',
+  'gemini-1.5-flash':'Gemini 1.5 Flash (cũ, ổn định)'
+};
+// '' = Tự động (thử lần lượt mọi model)
+let selectedModel=localStorage.getItem('gemini_model')||'';
+// Đổ option vào 1 thẻ <select> model
+function fillModelSelect(sel){
+  if(!sel)return;
+  sel.innerHTML='';
+  const auto=document.createElement('option');auto.value='';auto.textContent='⚡ Tự động (thử lần lượt)';sel.appendChild(auto);
+  GEMINI_MODELS.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=MODEL_LABELS[m]||m;sel.appendChild(o);});
+  sel.value=selectedModel;
+}
+// Đặt model + đồng bộ mọi select + lưu localStorage
+function setModel(m){
+  selectedModel=m||'';
+  localStorage.setItem('gemini_model',selectedModel);
+  ['su-model','ht-model'].forEach(id=>{const el=document.getElementById(id);if(el&&el.value!==selectedModel)el.value=selectedModel;});
+}
+function initModelSelects(){
+  ['su-model','ht-model'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    fillModelSelect(el);
+    el.addEventListener('change',e=>{setModel(e.target.value);toast(selectedModel?('Đã chọn '+(MODEL_LABELS[selectedModel]||selectedModel)):'Đã đặt: Tự động chọn model');});
+  });
+}
 function parseRetryDelay(body){
   try{const j=JSON.parse(body);const d=(j.error?.details||[]).find(x=>/RetryInfo/.test(x['@type']||''));
     if(d&&d.retryDelay){const m=/(\d+(?:\.\d+)?)s/.exec(d.retryDelay);if(m)return Math.ceil(parseFloat(m[1])*1000);}}catch{}
@@ -351,8 +388,10 @@ async function callGemini(key,topic){
     generationConfig:{temperature:1.0,responseMimeType:'application/json'}
   };
   let res=null, lastErr='';
+  // Nếu quản trò chọn model cụ thể → thử model đó trước, rồi fallback các model còn lại
+  const models=selectedModel?[selectedModel,...GEMINI_MODELS.filter(m=>m!==selectedModel)]:GEMINI_MODELS;
   // Thử từng model; mỗi model retry tối đa 2 lần khi gặp 429
-  for(const model of GEMINI_MODELS){
+  for(const model of models){
     let attempt=0;
     while(attempt<3){
       res=await geminiRequest(key,model,payload);
@@ -606,6 +645,9 @@ function leaveGame(){
   roomCode=null;isHost=false;currentQ=null;mode=null;
   show('screen-menu');
 }
+
+// Khởi tạo dropdown chọn model (sau khi mọi biến/hằng đã khai báo)
+initModelSelects();
 </script>
 </body>
 </html>
