@@ -358,18 +358,21 @@ const MODEL_LABELS={
   'gemini-2.5-flash-lite':'Gemini 2.5 Flash-Lite (nhẹ, thông minh)'
 };
 // Model miễn phí phổ biến trên OpenRouter (id có hậu tố :free). Danh sách có thể đổi theo thời gian → có Tự động + ô nhập tùy ý.
-const OPENROUTER_MODELS=['meta-llama/llama-3.3-70b-instruct:free','deepseek/deepseek-r1:free','deepseek/deepseek-chat-v3-0324:free','google/gemini-2.0-flash-exp:free','mistralai/mistral-small-3.1-24b-instruct:free'];
+const OPENROUTER_MODELS=['meta-llama/llama-3.3-70b-instruct:free','qwen/qwen3-next-80b-a3b-instruct:free','google/gemma-4-31b-it:free','meta-llama/llama-3.2-3b-instruct:free','nousresearch/hermes-3-llama-3.1-405b:free'];
 const OR_LABELS={
   'meta-llama/llama-3.3-70b-instruct:free':'Llama 3.3 70B (mạnh, free)',
-  'deepseek/deepseek-r1:free':'DeepSeek R1 (suy luận, free)',
-  'deepseek/deepseek-chat-v3-0324:free':'DeepSeek V3 (free)',
-  'google/gemini-2.0-flash-exp:free':'Gemini 2.0 Flash exp (free)',
-  'mistralai/mistral-small-3.1-24b-instruct:free':'Mistral Small 3.1 24B (free)'
+  'qwen/qwen3-next-80b-a3b-instruct:free':'Qwen3 Next 80B (mạnh, free)',
+  'google/gemma-4-31b-it:free':'Gemma 4 31B (Google, free)',
+  'meta-llama/llama-3.2-3b-instruct:free':'Llama 3.2 3B (nhẹ, ít bị giới hạn)',
+  'nousresearch/hermes-3-llama-3.1-405b:free':'Hermes 3 405B (cực lớn, free)'
 };
 const PROVIDERS={
   gemini:{label:'Gemini',keyStore:'gemini_key',modelStore:'gemini_model',keyLab:'🔑 Gemini API Key',keyPh:'Dán API key của Gemini...',models:GEMINI_MODELS,labels:MODEL_LABELS,strict:true},
   openrouter:{label:'OpenRouter',keyStore:'openrouter_key',modelStore:'openrouter_model',keyLab:'🔑 OpenRouter API Key',keyPh:'Dán API key OpenRouter (sk-or-...)',models:OPENROUTER_MODELS,labels:OR_LABELS,strict:false}
 };
+// Id mặc định OpenRouter cũ đã bị gỡ → xóa khỏi localStorage để khỏi kẹt
+const OR_DEPRECATED=['deepseek/deepseek-r1:free','deepseek/deepseek-chat-v3-0324:free','google/gemini-2.0-flash-exp:free','mistralai/mistral-small-3.1-24b-instruct:free'];
+if(OR_DEPRECATED.includes(localStorage.getItem('openrouter_model')||''))localStorage.setItem('openrouter_model','');
 let aiProvider=localStorage.getItem('ai_provider')||'gemini';
 if(!PROVIDERS[aiProvider])aiProvider='gemini';
 function curCfg(){return PROVIDERS[aiProvider];}
