@@ -399,9 +399,11 @@ async function callGemini(key,topic){
       res=await geminiRequest(key,model,payload);
       if(res.ok)break;
       const body=await res.text().catch(()=>'');
-      if(res.status===429){
-        const wait=Math.min(parseRetryDelay(body)||(1500*(attempt+1)),8000);
-        lastErr='Vượt giới hạn (429)';
+      // 429 = vượt giới hạn; 503/500 = model quá tải/lỗi tạm thời → retry ngắn rồi sang model kế
+      if(res.status===429||res.status===503||res.status===500){
+        const overloaded=res.status!==429;
+        const wait=overloaded?(1200*(attempt+1)):Math.min(parseRetryDelay(body)||(1500*(attempt+1)),8000);
+        lastErr=overloaded?('Model quá tải ('+res.status+')'):'Vượt giới hạn (429)';
         attempt++;
         if(attempt<3){ if(typeof onGeminiRetry==='function')onGeminiRetry(model,Math.ceil(wait/1000)); await sleep(wait); continue; }
         break; // hết retry cho model này → sang model kế
