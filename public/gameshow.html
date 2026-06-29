@@ -341,15 +341,17 @@ function onGeminiRetry(model,secs){
   toast(msg);
 }
 // Danh sách model thử lần lượt (quota free tier tính riêng từng model)
-const GEMINI_MODELS=['gemini-2.0-flash','gemini-2.5-flash','gemini-2.0-flash-lite','gemini-1.5-flash'];
+const GEMINI_MODELS=['gemini-2.0-flash','gemini-2.5-flash','gemini-2.0-flash-lite','gemini-2.5-flash-lite'];
 const MODEL_LABELS={
   'gemini-2.0-flash':'Gemini 2.0 Flash (nhanh, cân bằng)',
   'gemini-2.5-flash':'Gemini 2.5 Flash (thông minh hơn)',
   'gemini-2.0-flash-lite':'Gemini 2.0 Flash-Lite (nhẹ, ít tốn quota)',
-  'gemini-1.5-flash':'Gemini 1.5 Flash (cũ, ổn định)'
+  'gemini-2.5-flash-lite':'Gemini 2.5 Flash-Lite (nhẹ, thông minh)'
 };
 // '' = Tự động (thử lần lượt mọi model)
 let selectedModel=localStorage.getItem('gemini_model')||'';
+// Bỏ giá trị model cũ đã bị gỡ khỏi API (vd gemini-1.5-flash)
+if(selectedModel&&!GEMINI_MODELS.includes(selectedModel)){selectedModel='';localStorage.setItem('gemini_model','');}
 // Đổ option vào 1 thẻ <select> model
 function fillModelSelect(sel){
   if(!sel)return;
@@ -405,12 +407,14 @@ async function callGemini(key,topic){
         break; // hết retry cho model này → sang model kế
       }
       if(res.status===400&&/API key/i.test(body)) throw new Error('API key không hợp lệ. Kiểm tra lại key Gemini.');
+      // 404 = model không tồn tại/đã gỡ; 403 = không có quyền → bỏ qua, thử model kế tiếp
+      if(res.status===404||res.status===403){ lastErr='Model '+model+' không khả dụng ('+res.status+')'; break; }
       throw new Error('Gemini lỗi '+res.status+': '+body.slice(0,160));
     }
     if(res&&res.ok)break;
   }
   if(!res||!res.ok){
-    throw new Error('Gemini 429 — vượt giới hạn quota/tốc độ trên mọi model. Hãy đợi ~1 phút rồi thử lại, hoặc dùng API key khác (free tier giới hạn số request mỗi phút/ngày). '+lastErr);
+    throw new Error('Không gọi được Gemini trên mọi model. Có thể do vượt giới hạn quota/tốc độ (429) — hãy đợi ~1 phút rồi thử lại hoặc dùng API key khác. Chi tiết: '+(lastErr||'không rõ'));
   }
   const data=await res.json();
   let txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
