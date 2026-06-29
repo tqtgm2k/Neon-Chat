@@ -609,6 +609,25 @@ function showNextOrEnd(){
 function nextQuestion(){
   if(mode==='single'){generateAndShowLocal($('su-topic').value.trim());}
 }
+// ─── Prefetch: đệm sẵn câu hỏi kế tiếp trong nền cho nhanh ───
+let _prefetch=null; // {topic, promise}
+function primePrefetch(topic){
+  const key=localStorage.getItem('gemini_key');
+  if(!key)return;
+  topic=topic||'kiến thức tổng hợp';
+  if(_prefetch&&_prefetch.topic===topic)return; // đã đệm đúng chủ đề
+  _prefetch={topic, promise:callGemini(key,topic).catch(()=>null)};
+}
+// Lấy 1 câu: ưu tiên câu đã đệm (đúng chủ đề), không có thì gọi mới; sau đó tự đệm câu kế
+async function getQuestion(topic){
+  const key=localStorage.getItem('gemini_key');
+  topic=topic||'kiến thức tổng hợp';
+  let q=null;
+  if(_prefetch&&_prefetch.topic===topic){ q=await _prefetch.promise; _prefetch=null; }
+  if(!q){ q=await callGemini(key,topic); }
+  primePrefetch(topic); // bắt đầu đệm câu kế ngay khi câu này sắp hiện
+  return q;
+}
 async function generateAndShowLocal(topic){
   const key=localStorage.getItem('gemini_key');
   $('q-card').classList.remove('hidden');
@@ -616,7 +635,7 @@ async function generateAndShowLocal(topic){
   $('q-answer').innerHTML='';$('q-feedback').textContent='';
   $('q-submit').classList.add('hidden');$('q-next').classList.add('hidden');
   try{
-    const q=await callGemini(key,topic);
+    const q=await getQuestion(topic);
     currentQ=q;showQuestion(q);
   }catch(e){
     $('q-content').textContent='⚠️ '+e.message;
@@ -630,7 +649,7 @@ async function hostGenerate(){
   const topic=$('ht-topic').value.trim()||'kiến thức tổng hợp';
   $('ht-gen').disabled=true;$('ht-hint').innerHTML='<span class="spinner"></span> AI đang tạo câu hỏi...';
   try{
-    const q=await callGemini(key,topic);
+    const q=await getQuestion(topic);
     socket.emit('gs_push_question',{code:roomCode,question:q});
     $('ht-hint').textContent='Đã gửi câu hỏi tới phòng. Mọi người đang trả lời.';
   }catch(e){
