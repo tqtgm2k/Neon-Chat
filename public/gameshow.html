@@ -185,11 +185,20 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
         </div>
       </div>
 
-      <label class="fld"><span class="lab">🔑 Gemini API Key</span>
+      <label class="fld"><span class="lab">🤖 Nhà cung cấp AI</span>
+        <select id="su-provider">
+          <option value="gemini">Google Gemini</option>
+          <option value="openrouter">OpenRouter</option>
+        </select></label>
+
+      <label class="fld"><span class="lab" id="su-key-lab">🔑 Gemini API Key</span>
         <input id="su-key" type="password" placeholder="Dán API key của Gemini..." autocomplete="off"></label>
 
       <label class="fld"><span class="lab">🧠 Model AI</span>
         <select id="su-model"></select></label>
+
+      <label class="fld hidden" id="su-or-custom-wrap"><span class="lab">✏️ Hoặc nhập model id (OpenRouter)</span>
+        <input id="su-or-custom" placeholder="VD: openai/gpt-4o-mini (để trống = dùng dropdown)" autocomplete="off"></label>
 
       <label class="fld"><span class="lab">📚 Chủ đề câu hỏi</span>
         <input id="su-topic" placeholder="VD: địa lý Việt Nam, đố mẹo dân gian, lịch sử..." value="kiến thức tổng hợp Việt Nam"></label>
@@ -327,20 +336,20 @@ $('su-name').value=singleName!=='Bạn'?singleName:'';
 $('jn-name').value=singleName!=='Bạn'?singleName:'';
 
 // ─── menu navigation ───
-function goSingle(){mode='single';$('setup-title').textContent='🎯 Chơi đơn';$('host-identity').classList.add('hidden');$('single-extra').classList.remove('hidden');$('setup-hint').textContent='Cần Gemini API key để AI sinh câu hỏi.';show('screen-setup');}
-function goCreate(){mode='host';$('setup-title').textContent='🏠 Tạo phòng (quản trò)';$('host-identity').classList.remove('hidden');$('single-extra').classList.add('hidden');$('setup-hint').textContent='Bạn là quản trò: cần Gemini API key để tạo câu hỏi cho cả phòng.';show('screen-setup');}
+function goSingle(){mode='single';$('setup-title').textContent='🎯 Chơi đơn';$('host-identity').classList.add('hidden');$('single-extra').classList.remove('hidden');$('setup-hint').textContent='Cần API key (Gemini hoặc OpenRouter) để AI sinh câu hỏi.';show('screen-setup');}
+function goCreate(){mode='host';$('setup-title').textContent='🏠 Tạo phòng (quản trò)';$('host-identity').classList.remove('hidden');$('single-extra').classList.add('hidden');$('setup-hint').textContent='Bạn là quản trò: cần API key (Gemini hoặc OpenRouter) để tạo câu hỏi cho cả phòng.';show('screen-setup');}
 function goJoin(){mode='player';show('screen-join');}
 
 // ─── Gemini call (client-side) ───
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 // Hiển thị trạng thái khi đang đợi thử lại sau 429
 function onGeminiRetry(model,secs){
-  const msg='⏳ Gemini bận (429) — đợi '+secs+'s rồi thử lại ('+model+')...';
+  const msg='⏳ AI bận — đợi '+secs+'s rồi thử lại ('+model+')...';
   const qc=$('q-content'); if(qc && mode==='single') qc.innerHTML='<span class="spinner"></span> '+msg;
   const hh=$('ht-hint'); if(hh && mode==='host') hh.innerHTML='<span class="spinner"></span> '+msg;
   toast(msg);
 }
-// Danh sách model thử lần lượt (quota free tier tính riêng từng model)
+// Danh sách model Gemini thử lần lượt (quota free tier tính riêng từng model)
 const GEMINI_MODELS=['gemini-2.0-flash','gemini-2.5-flash','gemini-2.0-flash-lite','gemini-2.5-flash-lite'];
 const MODEL_LABELS={
   'gemini-2.0-flash':'Gemini 2.0 Flash (nhanh, cân bằng)',
@@ -348,36 +357,91 @@ const MODEL_LABELS={
   'gemini-2.0-flash-lite':'Gemini 2.0 Flash-Lite (nhẹ, ít tốn quota)',
   'gemini-2.5-flash-lite':'Gemini 2.5 Flash-Lite (nhẹ, thông minh)'
 };
+// Model miễn phí phổ biến trên OpenRouter (id có hậu tố :free). Danh sách có thể đổi theo thời gian → có Tự động + ô nhập tùy ý.
+const OPENROUTER_MODELS=['meta-llama/llama-3.3-70b-instruct:free','deepseek/deepseek-r1:free','deepseek/deepseek-chat-v3-0324:free','google/gemini-2.0-flash-exp:free','mistralai/mistral-small-3.1-24b-instruct:free'];
+const OR_LABELS={
+  'meta-llama/llama-3.3-70b-instruct:free':'Llama 3.3 70B (mạnh, free)',
+  'deepseek/deepseek-r1:free':'DeepSeek R1 (suy luận, free)',
+  'deepseek/deepseek-chat-v3-0324:free':'DeepSeek V3 (free)',
+  'google/gemini-2.0-flash-exp:free':'Gemini 2.0 Flash exp (free)',
+  'mistralai/mistral-small-3.1-24b-instruct:free':'Mistral Small 3.1 24B (free)'
+};
+const PROVIDERS={
+  gemini:{label:'Gemini',keyStore:'gemini_key',modelStore:'gemini_model',keyLab:'🔑 Gemini API Key',keyPh:'Dán API key của Gemini...',models:GEMINI_MODELS,labels:MODEL_LABELS,strict:true},
+  openrouter:{label:'OpenRouter',keyStore:'openrouter_key',modelStore:'openrouter_model',keyLab:'🔑 OpenRouter API Key',keyPh:'Dán API key OpenRouter (sk-or-...)',models:OPENROUTER_MODELS,labels:OR_LABELS,strict:false}
+};
+let aiProvider=localStorage.getItem('ai_provider')||'gemini';
+if(!PROVIDERS[aiProvider])aiProvider='gemini';
+function curCfg(){return PROVIDERS[aiProvider];}
+function curKey(){return localStorage.getItem(curCfg().keyStore)||'';}
 // '' = Tự động (thử lần lượt mọi model)
-let selectedModel=localStorage.getItem('gemini_model')||'';
-// Bỏ giá trị model cũ đã bị gỡ khỏi API (vd gemini-1.5-flash)
-if(selectedModel&&!GEMINI_MODELS.includes(selectedModel)){selectedModel='';localStorage.setItem('gemini_model','');}
-// Đổ option vào 1 thẻ <select> model
+let selectedModel=localStorage.getItem(curCfg().modelStore)||'';
+// Với Gemini: bỏ model cũ đã bị gỡ. Với OpenRouter: cho phép id tùy ý nên không loại.
+if(curCfg().strict&&selectedModel&&!curCfg().models.includes(selectedModel)){selectedModel='';localStorage.setItem(curCfg().modelStore,'');}
+function modelLabel(m){return curCfg().labels[m]||m;}
+// Đổ option vào 1 thẻ <select> model theo nhà cung cấp đang chọn
 function fillModelSelect(sel){
   if(!sel)return;
   sel.innerHTML='';
   const auto=document.createElement('option');auto.value='';auto.textContent='⚡ Tự động (thử lần lượt)';sel.appendChild(auto);
-  GEMINI_MODELS.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=MODEL_LABELS[m]||m;sel.appendChild(o);});
+  curCfg().models.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=modelLabel(m);sel.appendChild(o);});
+  // Model đã chọn là id tùy ý (không có trong danh sách) → thêm option để hiển thị đúng
+  if(selectedModel&&!curCfg().models.includes(selectedModel)){const o=document.createElement('option');o.value=selectedModel;o.textContent='✏️ '+selectedModel;sel.appendChild(o);}
   sel.value=selectedModel;
 }
 // Đặt model + đồng bộ mọi select + lưu localStorage
 function setModel(m){
   selectedModel=m||'';
-  localStorage.setItem('gemini_model',selectedModel);
+  localStorage.setItem(curCfg().modelStore,selectedModel);
+  _prefetch=null; // model đổi → bỏ câu đã đệm cũ
   ['su-model','ht-model'].forEach(id=>{const el=document.getElementById(id);if(el&&el.value!==selectedModel)el.value=selectedModel;});
 }
+// Đổi nhà cung cấp AI: cập nhật key/model/UI
+function setProvider(p){
+  if(!PROVIDERS[p])p='gemini';
+  aiProvider=p;localStorage.setItem('ai_provider',p);
+  _prefetch=null; // provider đổi → bỏ câu đã đệm cũ
+  selectedModel=localStorage.getItem(curCfg().modelStore)||'';
+  if(curCfg().strict&&selectedModel&&!curCfg().models.includes(selectedModel)){selectedModel='';localStorage.setItem(curCfg().modelStore,'');}
+  const lab=document.getElementById('su-key-lab');if(lab)lab.textContent=curCfg().keyLab;
+  const key=document.getElementById('su-key');if(key){key.placeholder=curCfg().keyPh;key.value=curKey();}
+  const wrap=document.getElementById('su-or-custom-wrap');if(wrap)wrap.classList.toggle('hidden',aiProvider!=='openrouter');
+  const cust=document.getElementById('su-or-custom');if(cust)cust.value=(aiProvider==='openrouter'&&selectedModel&&!curCfg().models.includes(selectedModel))?selectedModel:'';
+  ['su-model','ht-model'].forEach(id=>{const el=document.getElementById(id);if(el)fillModelSelect(el);});
+}
 function initModelSelects(){
+  const prov=document.getElementById('su-provider');
+  if(prov){prov.addEventListener('change',e=>{setProvider(e.target.value);toast('Nhà cung cấp: '+curCfg().label);});}
   ['su-model','ht-model'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
-    fillModelSelect(el);
-    el.addEventListener('change',e=>{setModel(e.target.value);toast(selectedModel?('Đã chọn '+(MODEL_LABELS[selectedModel]||selectedModel)):'Đã đặt: Tự động chọn model');});
+    el.addEventListener('change',e=>{setModel(e.target.value);toast(selectedModel?('Đã chọn '+modelLabel(selectedModel)):'Đã đặt: Tự động chọn model');});
   });
+  const cust=document.getElementById('su-or-custom');
+  if(cust){cust.addEventListener('change',e=>{const v=e.target.value.trim();setModel(v);['su-model','ht-model'].forEach(id=>{const el=document.getElementById(id);if(el)fillModelSelect(el);});toast(v?('Model tùy chỉnh: '+v):'Đã xóa model tùy chỉnh');});}
+  if(prov)prov.value=aiProvider;
+  setProvider(aiProvider); // khởi tạo UI + đổ dropdown lần đầu
 }
 function parseRetryDelay(body){
   try{const j=JSON.parse(body);const d=(j.error?.details||[]).find(x=>/RetryInfo/.test(x['@type']||''));
     if(d&&d.retryDelay){const m=/(\d+(?:\.\d+)?)s/.exec(d.retryDelay);if(m)return Math.ceil(parseFloat(m[1])*1000);}}catch{}
   return 0;
+}
+// Bóc JSON từ text AI rồi chuẩn hóa thành object câu hỏi hợp lệ (dùng chung mọi nhà cung cấp)
+function normalizeQuestion(raw,topic){
+  let txt=String(raw||'').replace(/```json/gi,'').replace(/```/g,'').trim();
+  let q;
+  try{q=JSON.parse(txt);}catch{const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('Không đọc được JSON từ AI');q=JSON.parse(m[0]);}
+  q.type=q.type==='essay'?'essay':'mc';
+  q.difficulty=Math.max(1,Math.min(15,parseInt(q.difficulty)||1));
+  q.options=Array.isArray(q.options)?q.options.map(String).filter(Boolean).slice(0,4):[];
+  q.content=String(q.content||'').trim();
+  q.correctAnswer=String(q.correctAnswer||'').trim();
+  q.topic=String(q.topic||topic||'').trim();
+  if(q.type==='mc'&&q.options.length<2)throw new Error('AI trả về thiếu phương án');
+  if(!q.content||!q.correctAnswer)throw new Error('AI trả về câu hỏi không hợp lệ');
+  q.points=prizeFor(q.difficulty);
+  return q;
 }
 async function geminiRequest(key,model,payload){
   const url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key);
@@ -419,28 +483,61 @@ async function callGemini(key,topic){
     throw new Error('Không gọi được Gemini trên mọi model. Có thể do vượt giới hạn quota/tốc độ (429) — hãy đợi ~1 phút rồi thử lại hoặc dùng API key khác. Chi tiết: '+(lastErr||'không rõ'));
   }
   const data=await res.json();
-  let txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
-  txt=txt.replace(/```json/gi,'').replace(/```/g,'').trim();
-  let q;
-  try{q=JSON.parse(txt);}catch{const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('Không đọc được JSON từ AI');q=JSON.parse(m[0]);}
-  // validate / normalize
-  q.type=q.type==='essay'?'essay':'mc';
-  q.difficulty=Math.max(1,Math.min(15,parseInt(q.difficulty)||1));
-  q.options=Array.isArray(q.options)?q.options.map(String).filter(Boolean).slice(0,4):[];
-  q.content=String(q.content||'').trim();
-  q.correctAnswer=String(q.correctAnswer||'').trim();
-  q.topic=String(q.topic||topic||'').trim();
-  if(q.type==='mc'&&q.options.length<2)throw new Error('AI trả về thiếu phương án');
-  if(!q.content||!q.correctAnswer)throw new Error('AI trả về câu hỏi không hợp lệ');
-  q.points=prizeFor(q.difficulty);
-  return q;
+  const txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  return normalizeQuestion(txt,topic);
+}
+// ─── OpenRouter call (API chuẩn OpenAI, gọi trực tiếp từ browser) ───
+async function callOpenRouter(key,topic){
+  const prompt=$('su-prompt').value.replace(/\{\{TOPIC\}\}/g,topic||'kiến thức tổng hợp');
+  let res=null, lastErr='';
+  const models=selectedModel?[selectedModel,...OPENROUTER_MODELS.filter(m=>m!==selectedModel)]:OPENROUTER_MODELS;
+  for(const model of models){
+    let attempt=0;
+    while(attempt<3){
+      res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+key,'X-Title':'Neon Chat Gameshow'},
+        body:JSON.stringify({model,messages:[{role:'user',content:prompt}],temperature:1.0})
+      });
+      if(res.ok)break;
+      const body=await res.text().catch(()=>'');
+      // 429 = giới hạn tốc độ; 503/500 = model bận → retry ngắn rồi sang model kế
+      if(res.status===429||res.status===503||res.status===500){
+        const overloaded=res.status!==429;
+        const wait=1200*(attempt+1);
+        lastErr=overloaded?('Model quá tải ('+res.status+')'):'Vượt giới hạn (429)';
+        attempt++;
+        if(attempt<3){ if(typeof onGeminiRetry==='function')onGeminiRetry(model,Math.ceil(wait/1000)); await sleep(wait); continue; }
+        break;
+      }
+      if(res.status===401||res.status===403) throw new Error('API key OpenRouter không hợp lệ hoặc bị từ chối. Kiểm tra lại key.');
+      if(res.status===402) throw new Error('Tài khoản OpenRouter hết credit. Hãy nạp thêm hoặc dùng model có hậu tố :free.');
+      if(res.status===404){ lastErr='Model '+model+' không khả dụng (404)'; break; }
+      throw new Error('OpenRouter lỗi '+res.status+': '+body.slice(0,160));
+    }
+    if(res&&res.ok)break;
+  }
+  if(!res||!res.ok){
+    throw new Error('Không gọi được OpenRouter trên mọi model. Có thể do giới hạn tốc độ hoặc model free đang bận — đợi chút rồi thử lại, hoặc nhập model id khác. Chi tiết: '+(lastErr||'không rõ'));
+  }
+  const data=await res.json();
+  const txt=data?.choices?.[0]?.message?.content||'';
+  return normalizeQuestion(txt,topic);
+}
+// Điều phối theo nhà cung cấp đang chọn
+async function callAI(topic){
+  const key=curKey();
+  if(!key)throw new Error('Chưa có API key của '+curCfg().label+'. Hãy nhập ở màn thiết lập.');
+  return aiProvider==='openrouter'?callOpenRouter(key,topic):callGemini(key,topic);
 }
 
 // ─── start from setup ───
 async function startFromSetup(){
   const key=$('su-key').value.trim();
-  if(!key){toast('⚠️ Hãy nhập Gemini API key');return;}
-  localStorage.setItem('gemini_key',key);
+  if(!key){toast('⚠️ Hãy nhập API key của '+curCfg().label);return;}
+  localStorage.setItem(curCfg().keyStore,key);
+  // OpenRouter: nếu có gõ model id tùy ý thì ưu tiên dùng
+  if(aiProvider==='openrouter'){const cv=($('su-or-custom').value||'').trim();if(cv&&cv!==selectedModel)setModel(cv);}
   const topic=$('su-topic').value.trim()||'kiến thức tổng hợp Việt Nam';
   if(mode==='single'){
     singleTotal=Math.max(1,Math.min(50,parseInt($('su-count').value)||10));
@@ -614,24 +711,21 @@ function nextQuestion(){
 // ─── Prefetch: đệm sẵn câu hỏi kế tiếp trong nền cho nhanh ───
 let _prefetch=null; // {topic, promise}
 function primePrefetch(topic){
-  const key=localStorage.getItem('gemini_key');
-  if(!key)return;
+  if(!curKey())return;
   topic=topic||'kiến thức tổng hợp';
   if(_prefetch&&_prefetch.topic===topic)return; // đã đệm đúng chủ đề
-  _prefetch={topic, promise:callGemini(key,topic).catch(()=>null)};
+  _prefetch={topic, promise:callAI(topic).catch(()=>null)};
 }
 // Lấy 1 câu: ưu tiên câu đã đệm (đúng chủ đề), không có thì gọi mới; sau đó tự đệm câu kế
 async function getQuestion(topic){
-  const key=localStorage.getItem('gemini_key');
   topic=topic||'kiến thức tổng hợp';
   let q=null;
   if(_prefetch&&_prefetch.topic===topic){ q=await _prefetch.promise; _prefetch=null; }
-  if(!q){ q=await callGemini(key,topic); }
+  if(!q){ q=await callAI(topic); }
   primePrefetch(topic); // bắt đầu đệm câu kế ngay khi câu này sắp hiện
   return q;
 }
 async function generateAndShowLocal(topic){
-  const key=localStorage.getItem('gemini_key');
   $('q-card').classList.remove('hidden');
   $('q-content').innerHTML='<span class="spinner"></span> AI đang nghĩ câu hỏi...';
   $('q-answer').innerHTML='';$('q-feedback').textContent='';
@@ -647,7 +741,6 @@ async function generateAndShowLocal(topic){
 
 // ─── host actions ───
 async function hostGenerate(){
-  const key=localStorage.getItem('gemini_key');
   const topic=$('ht-topic').value.trim()||'kiến thức tổng hợp';
   $('ht-gen').disabled=true;$('ht-hint').innerHTML='<span class="spinner"></span> AI đang tạo câu hỏi...';
   try{
