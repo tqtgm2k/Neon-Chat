@@ -84,10 +84,25 @@ input,textarea,select{width:100%;background:var(--bg2);border:1.5px solid var(--
   color:var(--text);font-family:'Rajdhani';font-size:15px;padding:11px 13px;outline:none;transition:border-color .15s,box-shadow .15s}
 input:focus,textarea:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,245,255,.25)}
 textarea{resize:vertical;min-height:120px;line-height:1.5}
+.prompt-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.prompt-head .lab{margin-bottom:0!important}
+.prompt-head .btn{padding:7px 10px;font-size:11.5px;flex:0 0 auto}
+.prompt-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,8,20,.82);backdrop-filter:blur(8px)}
+.prompt-box{width:min(980px,96vw);height:min(82vh,760px);display:flex;flex-direction:column;background:var(--panel);border:1.5px solid var(--cyan);border-radius:12px;box-shadow:0 0 34px rgba(0,245,255,.32);padding:16px}
+.prompt-box h3{font-family:'Orbitron';font-size:15px;color:var(--cyan);letter-spacing:.5px;margin:0}
+.prompt-box textarea{flex:1;min-height:0;margin-top:12px;font-size:16px;line-height:1.55;font-family:Consolas,'Courier New',monospace;resize:none}
+.prompt-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.prompt-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+.prompt-actions .btn{min-width:120px}
 .row{display:flex;gap:12px;flex-wrap:wrap}
 .row>*{flex:1;min-width:0}
 .color-row{display:flex;gap:8px;align-items:center}
 .color-row input[type=color]{width:46px;height:42px;padding:3px;flex:0 0 auto;cursor:pointer}
+.voice-grid{display:grid;grid-template-columns:180px 1fr;gap:12px;align-items:end}
+.voice-grid .btn{padding:11px 12px}
+.voice-speed{display:flex;align-items:center;gap:10px;margin-top:8px}
+.voice-speed input{padding:0}
+.voice-speed span{font-family:'Orbitron';font-size:12px;color:var(--cyan);min-width:42px;text-align:right}
 
 /* ── scoreboard ── */
 .scoreboard{background:var(--panel);border:1.5px solid var(--border2);border-radius:var(--r);padding:14px 16px;margin-bottom:16px}
@@ -107,6 +122,9 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
 .chip.topic{color:var(--cyan);border-color:rgba(0,245,255,.5);background:rgba(0,245,255,.07)}
 .chip.points{color:var(--yellow);border-color:rgba(255,204,0,.5);background:rgba(255,204,0,.07)}
 .q-content{font-size:clamp(18px,4.6vw,24px);font-weight:600;line-height:1.45;margin:6px 0 20px;color:#eaf2ff}
+.q-tools{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:-4px 0 12px;flex-wrap:wrap}
+.q-tools .btn{padding:8px 12px;font-size:12.5px}
+.voice-note{font-size:12.5px;color:var(--text2)}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .opt{display:flex;align-items:center;gap:12px;text-align:left;padding:14px 16px;border-radius:10px;cursor:pointer;
   background:var(--bg2);border:1.5px solid var(--border);transition:.15s;font-family:'Rajdhani';font-size:16px;color:var(--text)}
@@ -122,6 +140,22 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
 .feedback{margin-top:16px;font-family:'Orbitron';font-weight:700;font-size:16px;text-align:center;min-height:24px}
 .feedback.ok{color:var(--green);text-shadow:0 0 10px var(--green)}
 .feedback.no{color:var(--red);text-shadow:0 0 10px var(--red)}
+/* ── MC commentary (lời dẫn có cảm xúc) ── */
+.mc-line{display:flex;gap:10px;align-items:flex-start;
+  background:linear-gradient(90deg,rgba(191,0,255,.14),rgba(0,245,255,.07));
+  border:1px solid var(--border2);border-left:3px solid var(--purple);border-radius:10px;
+  padding:11px 14px;margin-bottom:14px;font-size:14.5px;line-height:1.5;font-weight:500;color:#e3ecff;
+  animation:fade .3s ease}
+.mc-line:empty{display:none}
+.mc-line .mc-ava{font-size:20px;flex:0 0 auto;filter:drop-shadow(0 0 6px var(--purple))}
+.mc-line[data-emotion="tense"]{border-left-color:var(--yellow)}
+.mc-line[data-emotion="happy"],.mc-line[data-emotion="excited"]{border-left-color:var(--green)}
+.mc-line[data-emotion="surprised"]{border-left-color:var(--cyan)}
+.mc-line[data-emotion="serious"]{border-left-color:var(--pink)}
+/* ── giải thích đáp án ── */
+.explain{margin-top:14px;background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.32);
+  border-radius:10px;padding:12px 14px;font-size:14.5px;line-height:1.55;color:#d6ffe9;animation:fade .3s ease}
+.explain b{color:var(--green);font-family:'Orbitron';font-weight:700;letter-spacing:.3px}
 .actions{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
 .actions .btn{flex:1;min-width:130px}
 
@@ -139,6 +173,10 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
 @media(max-width:640px){
   .menu-grid{grid-template-columns:1fr}
   .opts{grid-template-columns:1fr}
+  .voice-grid{grid-template-columns:1fr}
+  .prompt-box{height:88vh;padding:12px}
+  .prompt-top,.prompt-actions{align-items:stretch;flex-direction:column}
+  .prompt-actions .btn{width:100%}
 }
 </style>
 </head>
@@ -189,9 +227,10 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
         <select id="su-provider">
           <option value="gemini">Google Gemini</option>
           <option value="openrouter">OpenRouter</option>
+          <option value="mistral">Mistral AI</option>
         </select></label>
 
-      <label class="fld"><span class="lab" id="su-key-lab">🔑 Gemini API Key</span>
+      <label class="fld" id="su-key-wrap"><span class="lab" id="su-key-lab">🔑 Gemini API Key</span>
         <input id="su-key" type="password" placeholder="Dán API key của Gemini..." autocomplete="off"></label>
 
       <label class="fld"><span class="lab">🧠 Model AI</span>
@@ -203,8 +242,43 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
       <label class="fld"><span class="lab">📚 Chủ đề câu hỏi</span>
         <input id="su-topic" placeholder="VD: địa lý Việt Nam, đố mẹo dân gian, lịch sử..." value="kiến thức tổng hợp Việt Nam"></label>
 
-      <label class="fld"><span class="lab">🤖 Prompt cho AI (quản trò)</span>
+      <label class="fld">
+        <div class="prompt-head">
+          <span class="lab">🤖 Prompt cho AI (quản trò)</span>
+          <button type="button" class="btn ghost" onclick="openPromptEditor()">Mở rộng</button>
+        </div>
         <textarea id="su-prompt"></textarea></label>
+
+      <div class="voice-grid">
+        <label class="fld"><span class="lab">🔊 Giọng đọc</span>
+          <div class="row">
+            <select id="su-voice-provider">
+              <option value="google">Google Translate TTS (vi-VN)</option>
+              <option value="browser">Trình duyệt (vi-VN)</option>
+              <option value="elevenlabs">ElevenLabs API</option>
+            </select>
+            <button type="button" id="su-test-voice" class="btn ghost" onclick="testVoice()">Thử giọng</button>
+          </div></label>
+        <div class="hidden" id="su-eleven-voice-wrap">
+          <label class="fld"><span class="lab">🔑 API key ElevenLabs</span>
+            <input id="su-eleven-key" type="password" placeholder="Dán API key ElevenLabs nếu muốn dùng tài khoản của bạn" autocomplete="off">
+            <span class="muted">Có thể để trống nếu server đã cấu hình key. Nhập key riêng để dùng các giọng trong tài khoản của bạn.</span>
+          </label>
+          <label class="fld"><span class="lab">🎧 Giọng free ElevenLabs</span>
+            <select id="su-eleven-free-voice"></select>
+            <span class="muted" id="su-eleven-voice-status">Chọn giọng free để tự điền ID bên dưới. Nhập ID riêng nếu muốn dùng giọng Pro/custom.</span>
+          </label>
+          <label class="fld"><span class="lab">🎙 ID giọng nói ElevenLabs</span>
+            <input id="su-eleven-voice" placeholder="Dán ID giọng nói, ví dụ: 21m00Tcm4TlvDq8ikWAM" autocomplete="off">
+            <span class="muted">Có thể thay bằng ID giọng Pro/custom nếu API key ElevenLabs có quyền truy cập giọng đó.</span>
+          </label>
+        </div>
+      </div>
+      <label class="fld"><span class="lab">⏩ Tốc độ giọng đọc</span>
+        <div class="voice-speed">
+          <input id="su-voice-speed" type="range" min="0.75" max="1.35" step="0.05" value="1">
+          <span id="su-voice-speed-val">1.00x</span>
+        </div></label>
 
       <div class="row" id="single-extra">
         <label class="fld"><span class="lab">Số câu hỏi (chơi đơn)</span>
@@ -212,7 +286,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
       </div>
 
       <div class="actions">
-        <button class="btn ghost" onclick="show('screen-menu')">← Quay lại</button>
+        <button class="btn ghost" onclick="showScreen('screen-menu')">← Quay lại</button>
         <button id="su-start" class="btn green" onclick="startFromSetup()">Bắt đầu →</button>
       </div>
       <p id="setup-hint" class="muted" style="margin-top:10px"></p>
@@ -232,7 +306,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
       <label class="fld"><span class="lab">🔢 Mã phòng</span>
         <input id="jn-code" placeholder="VD: AB12" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-family:'Orbitron';font-size:20px;text-align:center"></label>
       <div class="actions">
-        <button class="btn ghost" onclick="show('screen-menu')">← Quay lại</button>
+        <button class="btn ghost" onclick="showScreen('screen-menu')">← Quay lại</button>
         <button class="btn cyan" onclick="doJoin()">Tham gia →</button>
       </div>
     </div>
@@ -263,14 +337,20 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
 
     <!-- question card -->
     <div id="q-card" class="panel hidden">
+      <div class="mc-line" id="mc-line"></div>
       <div class="q-meta">
         <span class="chip topic" id="q-topic">—</span>
         <span class="chip points" id="q-points">—</span>
         <span class="chip" id="q-diff" style="color:var(--purple);border-color:var(--border2)">—</span>
       </div>
+      <div class="q-tools">
+        <span id="q-voice-note" class="voice-note hidden"></span>
+        <button id="q-speak" class="btn ghost hidden" onclick="toggleQuestionSpeech()" title="Đọc câu hỏi bằng giọng nói" aria-label="Đọc câu hỏi bằng giọng nói">🔊 Đọc câu hỏi</button>
+      </div>
       <div class="q-content" id="q-content"></div>
       <div id="q-answer"></div>
       <div class="feedback" id="q-feedback"></div>
+      <div class="explain hidden" id="q-explain"></div>
       <div class="actions" id="q-actions">
         <button id="q-submit" class="btn green" onclick="submitAnswer()">Gửi đáp án</button>
         <button id="q-next" class="btn cyan hidden" onclick="nextQuestion()">Câu tiếp theo →</button>
@@ -289,6 +369,19 @@ textarea{resize:vertical;min-height:120px;line-height:1.5}
 </div>
 
 <div id="toast" class="toast"></div>
+<div id="prompt-modal" class="prompt-modal hidden" role="dialog" aria-modal="true" aria-labelledby="prompt-modal-title">
+  <div class="prompt-box">
+    <div class="prompt-top">
+      <h3 id="prompt-modal-title">Prompt cho AI</h3>
+      <button type="button" class="btn ghost" onclick="closePromptEditor(false)">Đóng</button>
+    </div>
+    <textarea id="prompt-editor" spellcheck="false"></textarea>
+    <div class="prompt-actions">
+      <button type="button" class="btn ghost" onclick="resetPromptEditor()">Mặc định</button>
+      <button type="button" class="btn cyan" onclick="closePromptEditor(true)">Áp dụng</button>
+    </div>
+  </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -300,33 +393,682 @@ const fmt=n=>Number(n).toLocaleString('vi-VN');
 
 const DEFAULT_PROMPT=
 `Bạn là người quản trò của một game show hỏi đáp tiếng Việt theo phong cách "Ai là triệu phú".
-Hãy tạo MỘT câu hỏi mới, thú vị về chủ đề: {{TOPIC}}.
-Quy tắc:
-- Loại câu hỏi: ngẫu nhiên là trắc nghiệm ("mc") hoặc tự luận ("essay").
-- Nếu trắc nghiệm: đưa ra 4 phương án, chỉ 1 phương án đúng.
-- Nếu tự luận: đáp án ngắn gọn (một từ hoặc một cụm từ).
-- Tự đánh giá độ khó từ 1 (rất dễ) đến 15 (cực khó) theo thang Ai là triệu phú.
-- Không lặp lại câu hỏi đã hỏi.
-Chỉ trả về DUY NHẤT một JSON hợp lệ, không kèm giải thích, theo đúng cấu trúc:
-{"topic":"<chủ đề ngắn>","difficulty":<1-15>,"type":"mc"|"essay","content":"<nội dung câu hỏi>","options":["<A>","<B>","<C>","<D>"],"correctAnswer":"<đáp án đúng; với mc là nội dung phương án đúng>"}
-Với câu tự luận, "options" để là mảng rỗng [].`;
+
+Nhiệm vụ:
+Tạo CHÍNH XÁC MỘT câu hỏi mới về chủ đề: {{TOPIC}}
+
+==================================================
+TRÁNH TRÙNG VỚI LỊCH SỬ
+==================================================
+
+Các câu hỏi đã sử dụng:
+{{PREVIOUS_QUESTIONS}}
+
+Danh sách dưới đây chứa các câu hỏi đã được sử dụng:
+
+{{PREVIOUS_QUESTIONS}}
+
+Không được tạo câu hỏi có:
+
+- cùng nội dung
+- cùng đáp án đúng
+- cùng sự kiện
+- cùng cách diễn đạt
+- chỉ thay đổi vài từ
+
+Nếu phát hiện quá giống một câu trong lịch sử thì bắt buộc tạo câu hoàn toàn khác.
+
+Yêu cầu chung:
+- Câu hỏi phải chính xác về mặt kiến thức.
+- Không tạo câu hỏi mơ hồ hoặc có nhiều đáp án đúng.
+- Không hỏi những thông tin quá lỗi thời hoặc thay đổi theo thời gian, trừ khi chủ đề yêu cầu.
+- Không lặp lại nội dung hoặc cách hỏi phổ biến nếu có thể.
+- Ngôn ngữ tự nhiên, giống chương trình truyền hình.
+- Không sử dụng các câu như "Theo AI...", "Theo ChatGPT...", "Theo Wikipedia...".
+
+Loại câu hỏi:
+- Chọn ngẫu nhiên một trong hai loại:
+  - "mc" (trắc nghiệm)
+  - "essay" (tự luận)
+
+Nếu là "mc":
+- Có đúng 4 phương án.
+- Chỉ có DUY NHẤT 1 đáp án đúng.
+- Các phương án có độ dài tương đối cân bằng.
+- Không để đáp án đúng nổi bật hơn các đáp án sai.
+- Không dùng:
+  - Tất cả đáp án trên
+  - Cả A và B
+  - Không đáp án nào đúng
+  - Đáp án A/B/C/D
+- correctAnswer phải chính xác bằng nội dung của phương án đúng.
+
+Nếu là "essay":
+- options phải là [].
+- correctAnswer phải là một từ hoặc một cụm từ rất ngắn (tối đa 5 từ).
+- Không yêu cầu trả lời dài dòng.
+
+Độ khó:
+Đánh giá difficulty từ 1 đến 15 theo phong cách Ai là triệu phú:
+
+1-3:
+- Kiến thức phổ thông rất dễ.
+
+4-6:
+- Người học phổ thông có thể biết.
+
+7-9:
+- Cần hiểu biết tương đối.
+
+10-12:
+- Khó, cần kiến thức chuyên sâu.
+
+13-15:
+- Rất khó nhưng vẫn có đáp án rõ ràng.
+
+MC:
+mcEmotion chỉ được là một trong:
+- neutral
+- excited
+- tense
+- happy
+- surprised
+- serious
+
+mcLine:
+- Một câu ngắn.
+- Tự nhiên như MC đang dẫn chương trình.
+- Không tiết lộ đáp án.
+- Không dài quá 50 từ.
+
+Giải thích:
+explanation:
+- 2-3 câu.
+- Giải thích vì sao đáp án đúng.
+- Không nhắc lại nguyên văn câu hỏi.
+
+JSON:
+Chỉ được trả về DUY NHẤT một JSON hợp lệ.
+Không được bọc trong markdown.
+Không được thêm bất kỳ văn bản nào ngoài JSON.
+Không được thêm dấu \`\`\`.
+
+Cấu trúc JSON:
+{
+  "topic":"<chủ đề ngắn>",
+  "difficulty":<1-15>,
+  "type":"mc"|"essay",
+  "content":"<câu hỏi>",
+  "options":["<A>","<B>","<C>","<D>"],
+  "correctAnswer":"<đáp án đúng>",
+  "mcEmotion":"neutral|excited|tense|happy|surprised|serious",
+  "mcLine":"<lời dẫn của MC>",
+  "explanation":"<giải thích>"
+}
+
+Quy tắc cuối cùng:
+- Luôn trả về đúng một object JSON.
+- Không được thiếu bất kỳ trường nào.
+- Không được thêm trường mới.
+- Nếu type="essay" thì options phải là [].
+- Nếu type="mc" thì options phải có đúng 4 phần tử.
+- JSON phải parse được bằng JSON.parse().`;
 
 // ─── state ───
 let mode=null;            // 'single' | 'host' | 'player'
 let socket=null;
 let roomCode=null;
 let isHost=false;
-let currentQ=null;       // {topic,difficulty,points,type,content,options,correctAnswer?}
+let currentQ=null;       // {topic,difficulty,points,type,content,options,mcEmotion,mcLine,explanation?,correctAnswer?}
 let selectedOpt=null;
 let answered=false;
 // single mode
 let singleScore=0, singleAsked=0, singleTotal=10, singleName='Bạn', singleColor='#00ff88';
+let questionHistory=[];
+const MAX_QUESTION_HISTORY=60;
 
 // ─── helpers ───
 const $=id=>document.getElementById(id);
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');window.scrollTo(0,0);}
+function showScreen(id){
+  if(id!=='screen-game')stopQuestionSpeech();
+  show(id);
+}
 let toastT=null;
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+function openPromptEditor(){
+  const modal=$('prompt-modal');
+  const editor=$('prompt-editor');
+  editor.value=$('su-prompt').value;
+  modal.classList.remove('hidden');
+  setTimeout(()=>{editor.focus();editor.selectionStart=editor.selectionEnd=editor.value.length;},0);
+}
+function closePromptEditor(apply){
+  if(apply){
+    $('su-prompt').value=$('prompt-editor').value;
+    toast('Đã cập nhật prompt');
+  }
+  $('prompt-modal').classList.add('hidden');
+}
+function resetPromptEditor(){
+  $('prompt-editor').value=DEFAULT_PROMPT;
+  $('prompt-editor').focus();
+}
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!$('prompt-modal').classList.contains('hidden'))closePromptEditor(false);
+});
+function questionHistoryItem(q){
+  if(!q)return '';
+  const content=String(q.content||'').replace(/\s+/g,' ').trim();
+  const answer=String(q.correctAnswer||'').replace(/\s+/g,' ').trim();
+  const topic=String(q.topic||'').replace(/\s+/g,' ').trim();
+  if(!content)return '';
+  return [topic?('['+topic+']'):'',content,answer?('Đáp án: '+answer):''].filter(Boolean).join(' ');
+}
+function rememberQuestion(q){
+  const item=questionHistoryItem(q);
+  if(!item)return;
+  const key=norm(item);
+  questionHistory=questionHistory.filter(x=>norm(x)!==key);
+  questionHistory.push(item);
+  if(questionHistory.length>MAX_QUESTION_HISTORY)questionHistory=questionHistory.slice(-MAX_QUESTION_HISTORY);
+}
+function resetQuestionHistory(){
+  questionHistory=[];
+  _prefetch=null;
+}
+function previousQuestionsText(){
+  if(!questionHistory.length)return '- Chưa có câu hỏi nào trong phiên này.';
+  return questionHistory.map((q,i)=>(i+1)+'. '+q).join('\n');
+}
+function buildAiPrompt(topic){
+  return $('su-prompt').value
+    .replace(/\{\{TOPIC\}\}/g,topic||'kiến thức tổng hợp')
+    .replace(/\{\{PREVIOUS_QUESTIONS\}\}/g,previousQuestionsText());
+}
+const MC_EMOTIONS={
+  neutral:{icon:'🎤',fallback:'MC giữ nhịp sân khấu: câu hỏi đã sẵn sàng.'},
+  excited:{icon:'🔥',fallback:'MC đầy hào hứng: đây là lúc bứt tốc!'},
+  tense:{icon:'⏳',fallback:'MC hạ giọng: câu này cần thật bình tĩnh.'},
+  happy:{icon:'✨',fallback:'MC mỉm cười: câu hỏi này có thể mở ra điểm số đẹp.'},
+  surprised:{icon:'😮',fallback:'MC bất ngờ: chi tiết nhỏ có thể quyết định tất cả.'},
+  serious:{icon:'🎯',fallback:'MC nghiêm túc: hãy đọc thật kỹ trước khi chọn.'}
+};
+let questionSpeechUtterance=null;
+let questionSpeechTimer=null;
+let questionAudio=null;
+let questionAudioUrl=null;
+let questionAudioCtx=null;
+let questionAudioSource=null;
+let questionSpeechBusy=false;
+let questionSpeechRun=0;
+let speechVoices=[];
+const ELEVENLABS_FREE_VOICES=[
+  {id:'21m00Tcm4TlvDq8ikWAM',label:'Rachel - nữ, tự nhiên'},
+  {id:'EXAVITQu4vr4xnSDxMaL',label:'Bella - nữ, rõ ràng'},
+  {id:'AZnzlk1XvdvUeBnXmlld',label:'Domi - nữ, mạnh'},
+  {id:'MF3mGyEYCl7XYWbV9V6O',label:'Elli - nữ, trẻ'},
+  {id:'ErXwobaYiN019PkySvjV',label:'Antoni - nam, rõ ràng'},
+  {id:'TxGEqnHWrfWFTfGW9XjX',label:'Josh - nam, tự nhiên'},
+  {id:'VR6AewLTigWG4xSOukaG',label:'Arnold - nam, mạnh'},
+  {id:'pNInz6obpgDQGcFmaJgB',label:'Adam - nam, trầm'},
+  {id:'yoZ06aMxZJJ28mfd3POQ',label:'Sam - nam, trung tính'}
+];
+const DEFAULT_ELEVEN_FREE_VOICE_ID=ELEVENLABS_FREE_VOICES[0].id;
+let elevenFreeVoices=[...ELEVENLABS_FREE_VOICES];
+let elevenFreeVoiceIds=new Set(elevenFreeVoices.map(v=>v.id));
+let elevenVoiceLoadTimer=null;
+let elevenVoiceLoadBusy=false;
+function normalizeElevenFreeVoiceId(value){
+  const id=String(value||'').trim();
+  return elevenFreeVoiceIds.has(id)?id:DEFAULT_ELEVEN_FREE_VOICE_ID;
+}
+let voiceProvider=localStorage.getItem('gs_voice_provider')||'google';
+if(!['google','browser','elevenlabs'].includes(voiceProvider))voiceProvider='google';
+let elevenApiKey=localStorage.getItem('gs_eleven_api_key')||'';
+let elevenVoiceId=localStorage.getItem('gs_eleven_voice_id')||'';
+if(!elevenVoiceId){
+  elevenVoiceId=DEFAULT_ELEVEN_FREE_VOICE_ID;
+  localStorage.setItem('gs_eleven_voice_id',elevenVoiceId);
+}
+let voiceSpeed=Math.max(.75,Math.min(1.35,parseFloat(localStorage.getItem('gs_voice_speed'))||1));
+function audioContextSupported(){
+  return typeof window.AudioContext!=='undefined'||typeof window.webkitAudioContext!=='undefined';
+}
+function getQuestionAudioContext(){
+  if(!audioContextSupported())return null;
+  if(!questionAudioCtx){
+    const Ctx=window.AudioContext||window.webkitAudioContext;
+    questionAudioCtx=new Ctx();
+  }
+  return questionAudioCtx;
+}
+async function unlockQuestionAudio(){
+  const ctx=getQuestionAudioContext();
+  if(!ctx)return false;
+  try{if(ctx.state==='suspended')await ctx.resume();}catch{}
+  return ctx.state==='running';
+}
+['pointerdown','keydown','touchstart'].forEach(ev=>{
+  window.addEventListener(ev,()=>{unlockQuestionAudio();},{once:true,passive:true});
+});
+function effectiveVoiceProvider(q=currentQ){
+  const provider=String(q?.voiceProvider||voiceProvider||'google').toLowerCase();
+  if(provider==='elevenlabs')return 'elevenlabs';
+  if(provider==='browser')return 'browser';
+  return 'google';
+}
+function effectiveElevenVoiceId(q=currentQ){
+  return String(q?.elevenVoiceId||elevenVoiceId||DEFAULT_ELEVEN_FREE_VOICE_ID).trim();
+}
+function effectiveVoiceSpeed(q=currentQ){
+  const speed=parseFloat(q?.voiceSpeed||voiceSpeed)||1;
+  return Math.max(.75,Math.min(1.35,speed));
+}
+function applyVoiceToQuestion(q){
+  if(!q)return q;
+  q.voiceProvider=voiceProvider;
+  q.elevenVoiceId=voiceProvider==='elevenlabs'?effectiveElevenVoiceId({}):'';
+  q.voiceSpeed=voiceSpeed;
+  return q;
+}
+function applyCurrentVoiceSettings(){
+  if(!currentQ)return;
+  currentQ.voiceProvider=voiceProvider;
+  currentQ.elevenVoiceId=voiceProvider==='elevenlabs'?effectiveElevenVoiceId({}):'';
+  currentQ.voiceSpeed=voiceSpeed;
+}
+function cleanSpeechText(s){
+  return String(s||'')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function buildQuestionSpeech(q){
+  if(!q)return '';
+  const parts=[];
+  const mcLine=cleanSpeechText(q.mcLine);
+  const content=cleanSpeechText(q.content);
+  if(mcLine)parts.push(mcLine);
+  if(content)parts.push('Câu hỏi: '+content);
+  if(q.type==='mc'&&Array.isArray(q.options)&&q.options.length){
+    ['A','B','C','D'].forEach((key,i)=>{
+      const option=cleanSpeechText(q.options[i]);
+      if(option)parts.push('Phương án '+key+': '+option);
+    });
+  }else if(content){
+    parts.push('Đây là câu hỏi tự luận.');
+  }
+  return parts.join('. ');
+}
+function updateSpeechButton(isSpeaking){
+  const btn=$('q-speak');
+  const testBtn=$('su-test-voice');
+  if(testBtn){
+    testBtn.disabled=questionSpeechBusy||isSpeaking;
+    testBtn.textContent=questionSpeechBusy?'Đang tạo...':(isSpeaking?'Dừng rồi thử lại':'Thử giọng');
+  }
+  if(!btn)return;
+  const note=$('q-voice-note');
+  const provider=effectiveVoiceProvider(currentQ);
+  const supported=provider==='google'||provider==='browser'||provider==='elevenlabs';
+  const hasText=!!buildQuestionSpeech(currentQ);
+  const canRead=supported&&hasText;
+  btn.classList.toggle('hidden',!supported);
+  btn.disabled=(!canRead&&!(questionSpeechBusy||isSpeaking));
+  btn.textContent=questionSpeechBusy?'⏳ Đang tạo giọng':(isSpeaking?'⏹ Dừng đọc':'🔊 Đọc câu hỏi');
+  btn.setAttribute('aria-label',isSpeaking?'Dừng đọc câu hỏi':'Đọc câu hỏi bằng giọng nói');
+  btn.setAttribute('aria-pressed',(isSpeaking||questionSpeechBusy)?'true':'false');
+  btn.title='Đọc câu hỏi bằng giọng nói';
+  if(note){
+    note.textContent='';
+    note.classList.add('hidden');
+  }
+}
+function clearQueuedQuestionSpeech(){
+  if(questionSpeechTimer){clearTimeout(questionSpeechTimer);questionSpeechTimer=null;}
+}
+function stopQuestionSpeech(){
+  clearQueuedQuestionSpeech();
+  questionSpeechRun++;
+  questionSpeechUtterance=null;
+  questionSpeechBusy=false;
+  try{if('speechSynthesis' in window)window.speechSynthesis.cancel();}catch{}
+  if(questionAudioSource){
+    try{questionAudioSource.stop(0);}catch{}
+    questionAudioSource.disconnect?.();
+    questionAudioSource=null;
+  }
+  if(questionAudio){
+    questionAudio.pause();
+    questionAudio.src='';
+    questionAudio=null;
+  }
+  if(questionAudioUrl){
+    URL.revokeObjectURL(questionAudioUrl);
+    questionAudioUrl=null;
+  }
+  updateSpeechButton(false);
+}
+async function playSpeechAudioBlob(blob,manual,runId,speed=1){
+  speed=Math.max(.75,Math.min(1.35,parseFloat(speed)||1));
+  const ctx=getQuestionAudioContext();
+  if(ctx){
+    try{
+      if(ctx.state==='suspended')await ctx.resume();
+      if(ctx.state!=='running'){
+        if(manual)toast('Trình duyệt đang chặn âm thanh. Bấm Đọc câu hỏi lại một lần nữa.');
+        return false;
+      }
+      const audioData=await blob.arrayBuffer();
+      const buffer=await ctx.decodeAudioData(audioData.slice(0));
+      if(runId!==questionSpeechRun)return false;
+      const source=ctx.createBufferSource();
+      source.buffer=buffer;
+      source.playbackRate.value=speed;
+      source.connect(ctx.destination);
+      questionAudioSource=source;
+      questionSpeechBusy=false;
+      updateSpeechButton(true);
+      source.onended=()=>{if(questionAudioSource===source&&runId===questionSpeechRun){stopQuestionSpeech();}};
+      source.start(0);
+      return true;
+    }catch(e){
+      if(manual)toast('Không phát được audio giọng đọc');
+    }
+  }
+  if(questionAudioUrl)URL.revokeObjectURL(questionAudioUrl);
+  questionAudioUrl=URL.createObjectURL(blob);
+  const audio=new Audio(questionAudioUrl);
+  audio.playbackRate=speed;
+  questionAudio=audio;
+  questionSpeechBusy=false;
+  updateSpeechButton(true);
+  audio.onended=()=>{if(questionAudio===audio&&runId===questionSpeechRun){stopQuestionSpeech();}};
+  audio.onerror=()=>{if(questionAudio===audio&&runId===questionSpeechRun){stopQuestionSpeech();if(manual)toast('Không phát được audio giọng đọc');}};
+  try{await audio.play();return true;}
+  catch(e){
+    if(manual)toast('Trình duyệt đang chặn âm thanh. Bấm Đọc câu hỏi lại một lần nữa.');
+    return false;
+  }
+}
+function loadSpeechVoices(){
+  if(!('speechSynthesis' in window))return [];
+  speechVoices=window.speechSynthesis.getVoices()||[];
+  return speechVoices;
+}
+function pickVietnameseVoice(){
+  const voices=speechVoices.length?speechVoices:loadSpeechVoices();
+  return voices.find(v=>String(v.lang||'').toLowerCase()==='vi-vn')||
+    voices.find(v=>String(v.lang||'').toLowerCase().startsWith('vi'))||
+    voices.find(v=>/vietnam|tiếng việt|tieng viet/i.test(String(v.name||'')))||
+    null;
+}
+function speakWithBrowserVoice(text,manual,runId,q=currentQ){
+  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){
+    if(manual)toast('Trình duyệt này không hỗ trợ đọc giọng nói.');
+    updateSpeechButton(false);
+    return;
+  }
+  try{window.speechSynthesis.cancel();}catch{}
+  const utterance=new SpeechSynthesisUtterance(text);
+  utterance.lang='vi-VN';
+  utterance.rate=effectiveVoiceSpeed(q);
+  utterance.pitch=1;
+  utterance.volume=1;
+  const voice=pickVietnameseVoice();
+  if(voice)utterance.voice=voice;
+  questionSpeechUtterance=utterance;
+  updateSpeechButton(true);
+  utterance.onend=()=>{if(questionSpeechUtterance===utterance&&runId===questionSpeechRun){stopQuestionSpeech();}};
+  utterance.onerror=()=>{if(questionSpeechUtterance===utterance&&runId===questionSpeechRun){stopQuestionSpeech();if(manual)toast('Không đọc được giọng nói trên trình duyệt.');}};
+  try{window.speechSynthesis.speak(utterance);}
+  catch(e){
+    questionSpeechUtterance=null;
+    updateSpeechButton(false);
+    if(manual)toast('Không đọc được giọng nói trên trình duyệt.');
+  }
+}
+async function speakWithGoogleTts(text,manual,runId,q=currentQ){
+  questionSpeechBusy=true;
+  updateSpeechButton(false);
+  try{
+    const res=await fetch('/api/gameshow/google-tts',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Neon-Gameshow-TTS':'google'},
+      body:JSON.stringify({text})
+    });
+    if(!res.ok){
+      let msg='Không tạo được giọng Google Translate TTS';
+      try{const err=await res.json();if(err&&err.error)msg=err.error;}catch{}
+      throw new Error(msg);
+    }
+    const blob=await res.blob();
+    if(runId!==questionSpeechRun)return;
+    const ok=await playSpeechAudioBlob(blob,manual,runId,effectiveVoiceSpeed(q));
+    if(!ok&&runId===questionSpeechRun){questionSpeechBusy=false;updateSpeechButton(false);}
+  }catch(e){
+    if(runId!==questionSpeechRun)return;
+    questionSpeechBusy=false;
+    if(manual)toast((e.message||'Không tạo được giọng Google Translate TTS')+'; chuyển sang giọng trình duyệt.');
+    speakWithBrowserVoice(text,manual,runId,{...q,voiceProvider:'browser'});
+  }
+}
+async function speakWithElevenLabs(text,manual,runId,q=currentQ){
+  const voiceId=effectiveElevenVoiceId(q);
+  if(!voiceId){
+    if(manual)toast('Chưa nhập ID giọng nói ElevenLabs');
+    updateSpeechButton(false);
+    return;
+  }
+  questionSpeechBusy=true;
+  updateSpeechButton(false);
+  try{
+    const payload={text,voiceId};
+    const apiKey=elevenApiKey.trim();
+    if(apiKey)payload.apiKey=apiKey;
+    const res=await fetch('/api/gameshow/tts',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Neon-Gameshow-TTS':'elevenlabs'},
+      body:JSON.stringify(payload)
+    });
+    if(!res.ok){
+      let msg='Không tạo được giọng ElevenLabs';
+      try{const err=await res.json();if(err&&err.error)msg=err.error;}catch{}
+      throw new Error(msg);
+    }
+    const blob=await res.blob();
+    if(runId!==questionSpeechRun)return;
+    const ok=await playSpeechAudioBlob(blob,manual,runId,effectiveVoiceSpeed(q));
+    if(!ok&&runId===questionSpeechRun){questionSpeechBusy=false;updateSpeechButton(false);}
+  }catch(e){
+    if(runId!==questionSpeechRun)return;
+    questionSpeechBusy=false;
+    stopQuestionSpeech();
+    if(manual)toast(e.message||'Không tạo được giọng ElevenLabs');
+  }
+}
+function speakQuestion(q=currentQ,manual=false){
+  clearQueuedQuestionSpeech();
+  if(questionSpeechUtterance||questionAudio||questionAudioSource||questionSpeechBusy)stopQuestionSpeech();
+  const runId=++questionSpeechRun;
+  if(q&&q===currentQ){
+    applyCurrentVoiceSettings();
+    q=currentQ;
+  }
+  const text=buildQuestionSpeech(q);
+  if(!text){
+    if(manual)toast('Không có nội dung câu hỏi để đọc');
+    updateSpeechButton(false);
+    return;
+  }
+  const provider=effectiveVoiceProvider(q);
+  if(provider==='elevenlabs')speakWithElevenLabs(text,manual,runId,q);
+  else if(provider==='google')speakWithGoogleTts(text,manual,runId,q);
+  else speakWithBrowserVoice(text,manual,runId,q);
+}
+async function testVoice(){
+  await unlockQuestionAudio();
+  if(questionSpeechUtterance||questionAudio||questionAudioSource||questionSpeechBusy)stopQuestionSpeech();
+  const runId=++questionSpeechRun;
+  const sample='Xin chào, đây là giọng đọc thử cho Neon Game Show. Câu hỏi đã sẵn sàng.';
+  if(voiceProvider==='elevenlabs')speakWithElevenLabs(sample,true,runId,{voiceProvider:'elevenlabs',elevenVoiceId:effectiveElevenVoiceId({}),voiceSpeed});
+  else if(voiceProvider==='google')speakWithGoogleTts(sample,true,runId,{voiceProvider:'google',voiceSpeed});
+  else speakWithBrowserVoice(sample,true,runId,{voiceProvider:'browser',voiceSpeed});
+}
+function queueQuestionSpeech(q){
+  clearQueuedQuestionSpeech();
+  questionSpeechTimer=setTimeout(()=>{if(currentQ===q)speakQuestion(q,false);},260);
+}
+async function toggleQuestionSpeech(){
+  if(questionSpeechUtterance||questionAudio||questionAudioSource||questionSpeechBusy){stopQuestionSpeech();return;}
+  await unlockQuestionAudio();
+  speakQuestion(currentQ,true);
+}
+function setVoiceProvider(provider){
+  voiceProvider=['google','browser','elevenlabs'].includes(provider)?provider:'google';
+  localStorage.setItem('gs_voice_provider',voiceProvider);
+  const sel=$('su-voice-provider');if(sel)sel.value=voiceProvider;
+  const wrap=$('su-eleven-voice-wrap');if(wrap)wrap.classList.toggle('hidden',voiceProvider!=='elevenlabs');
+  applyCurrentVoiceSettings();
+  stopQuestionSpeech();
+  updateSpeechButton(false);
+}
+function updateVoiceSpeedUi(){
+  const speed=$('su-voice-speed');
+  const val=$('su-voice-speed-val');
+  if(speed&&parseFloat(speed.value)!==voiceSpeed)speed.value=voiceSpeed;
+  if(val)val.textContent=voiceSpeed.toFixed(2)+'x';
+}
+function syncElevenFreeVoiceSelect(){
+  const freeVoice=$('su-eleven-free-voice');
+  if(!freeVoice)return;
+  freeVoice.value=elevenFreeVoiceIds.has(elevenVoiceId)?elevenVoiceId:'custom';
+}
+function setElevenVoiceStatus(text){
+  const status=$('su-eleven-voice-status');
+  if(status)status.textContent=text;
+}
+function renderElevenFreeVoiceOptions(){
+  const freeVoice=$('su-eleven-free-voice');
+  if(!freeVoice)return;
+  freeVoice.innerHTML='';
+  freeVoice.add(new Option('ID riêng/Pro trong ô bên dưới','custom'));
+  elevenFreeVoices.forEach(item=>freeVoice.add(new Option(item.label,item.id)));
+  syncElevenFreeVoiceSelect();
+}
+function initElevenFreeVoiceOptions(){
+  elevenFreeVoiceIds=new Set(elevenFreeVoices.map(v=>v.id));
+  renderElevenFreeVoiceOptions();
+}
+function scheduleElevenFreeVoicesLoad(){
+  clearTimeout(elevenVoiceLoadTimer);
+  elevenVoiceLoadTimer=setTimeout(loadElevenFreeVoices,700);
+}
+async function loadElevenFreeVoices(){
+  if(elevenVoiceLoadBusy)return;
+  elevenVoiceLoadBusy=true;
+  setElevenVoiceStatus('Đang tải danh sách giọng free ElevenLabs khả dụng...');
+  try{
+    const payload={};
+    const apiKey=elevenApiKey.trim();
+    if(apiKey)payload.apiKey=apiKey;
+    const res=await fetch('/api/gameshow/eleven-voices',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    if(!res.ok){
+      let msg='Không tải được danh sách giọng ElevenLabs';
+      try{const err=await res.json();if(err&&err.error)msg=err.error;}catch{}
+      throw new Error(msg);
+    }
+    const data=await res.json();
+    const voices=Array.isArray(data.voices)?data.voices:[];
+    if(voices.length){
+      elevenFreeVoices=voices;
+      elevenFreeVoiceIds=new Set(elevenFreeVoices.map(v=>v.id));
+      renderElevenFreeVoiceOptions();
+      setElevenVoiceStatus('Đã lọc '+voices.length+' giọng premade/free không yêu cầu subscription.');
+    }else{
+      elevenFreeVoices=[...ELEVENLABS_FREE_VOICES];
+      elevenFreeVoiceIds=new Set(elevenFreeVoices.map(v=>v.id));
+      renderElevenFreeVoiceOptions();
+      setElevenVoiceStatus('Không tìm thấy giọng free từ API, đang dùng danh sách premade cơ bản.');
+    }
+  }catch(e){
+    elevenFreeVoices=[...ELEVENLABS_FREE_VOICES];
+    elevenFreeVoiceIds=new Set(elevenFreeVoices.map(v=>v.id));
+    renderElevenFreeVoiceOptions();
+    setElevenVoiceStatus((e.message||'Không tải được từ API')+'. Đang dùng danh sách premade cơ bản.');
+  }finally{
+    elevenVoiceLoadBusy=false;
+  }
+}
+function initVoiceSettings(){
+  const provider=$('su-voice-provider');
+  const key=$('su-eleven-key');
+  const voice=$('su-eleven-voice');
+  const freeVoice=$('su-eleven-free-voice');
+  const speed=$('su-voice-speed');
+  initElevenFreeVoiceOptions();
+  loadSpeechVoices();
+  if('speechSynthesis' in window)window.speechSynthesis.onvoiceschanged=loadSpeechVoices;
+  if(provider){
+    provider.value=voiceProvider;
+    provider.addEventListener('change',e=>{
+      setVoiceProvider(e.target.value);
+      const label=voiceProvider==='elevenlabs'?'ElevenLabs API':(voiceProvider==='browser'?'giọng đọc trình duyệt (vi-VN)':'Google Translate TTS (vi-VN)');
+      toast('Đã chọn '+label);
+    });
+  }
+  if(key){
+    key.value=elevenApiKey;
+    key.addEventListener('input',e=>{
+      elevenApiKey=e.target.value.trim();
+      localStorage.setItem('gs_eleven_api_key',elevenApiKey);
+      scheduleElevenFreeVoicesLoad();
+      applyCurrentVoiceSettings();
+      stopQuestionSpeech();
+    });
+  }
+  if(voice){
+    voice.value=elevenVoiceId;
+    voice.addEventListener('input',e=>{
+      elevenVoiceId=e.target.value.trim();
+      localStorage.setItem('gs_eleven_voice_id',elevenVoiceId);
+      syncElevenFreeVoiceSelect();
+      applyCurrentVoiceSettings();
+      stopQuestionSpeech();
+    });
+  }
+  if(freeVoice){
+    syncElevenFreeVoiceSelect();
+    freeVoice.addEventListener('change',e=>{
+      if(e.target.value==='custom')return;
+      elevenVoiceId=normalizeElevenFreeVoiceId(e.target.value);
+      localStorage.setItem('gs_eleven_voice_id',elevenVoiceId);
+      if(voice)voice.value=elevenVoiceId;
+      syncElevenFreeVoiceSelect();
+      applyCurrentVoiceSettings();
+      stopQuestionSpeech();
+    });
+  }
+  if(speed){
+    speed.value=voiceSpeed;
+    speed.addEventListener('input',e=>{
+      voiceSpeed=Math.max(.75,Math.min(1.35,parseFloat(e.target.value)||1));
+      localStorage.setItem('gs_voice_speed',voiceSpeed);
+      updateVoiceSpeedUi();
+      applyCurrentVoiceSettings();
+      if(questionAudio)questionAudio.playbackRate=voiceSpeed;
+      if(questionAudioSource)questionAudioSource.playbackRate.value=voiceSpeed;
+    });
+  }
+  updateVoiceSpeedUi();
+  setVoiceProvider(voiceProvider);
+  scheduleElevenFreeVoicesLoad();
+}
 
 // prefill name from chat user if logged in
 try{const cu=JSON.parse(localStorage.getItem('nc_user')||'null');if(cu&&cu.username){singleName=cu.username;if(cu.color)singleColor=cu.color;}}catch{}
@@ -336,9 +1078,12 @@ $('su-name').value=singleName!=='Bạn'?singleName:'';
 $('jn-name').value=singleName!=='Bạn'?singleName:'';
 
 // ─── menu navigation ───
-function goSingle(){mode='single';$('setup-title').textContent='🎯 Chơi đơn';$('host-identity').classList.add('hidden');$('single-extra').classList.remove('hidden');$('setup-hint').textContent='Cần API key (Gemini hoặc OpenRouter) để AI sinh câu hỏi.';show('screen-setup');}
-function goCreate(){mode='host';$('setup-title').textContent='🏠 Tạo phòng (quản trò)';$('host-identity').classList.remove('hidden');$('single-extra').classList.add('hidden');$('setup-hint').textContent='Bạn là quản trò: cần API key (Gemini hoặc OpenRouter) để tạo câu hỏi cho cả phòng.';show('screen-setup');}
-function goJoin(){mode='player';show('screen-join');}
+function aiSetupHint(){
+  return 'Cần API key (Gemini, OpenRouter hoặc Mistral AI) để AI sinh câu hỏi.';
+}
+function goSingle(){mode='single';$('setup-title').textContent='🎯 Chơi đơn';$('host-identity').classList.add('hidden');$('single-extra').classList.remove('hidden');$('setup-hint').textContent=aiSetupHint();showScreen('screen-setup');}
+function goCreate(){mode='host';$('setup-title').textContent='🏠 Tạo phòng (quản trò)';$('host-identity').classList.remove('hidden');$('single-extra').classList.add('hidden');$('setup-hint').textContent='Bạn là quản trò: cần API key (Gemini, OpenRouter hoặc Mistral AI) để tạo câu hỏi cho cả phòng.';showScreen('screen-setup');}
+function goJoin(){mode='player';showScreen('screen-join');}
 
 // ─── Gemini call (client-side) ───
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -358,17 +1103,50 @@ const MODEL_LABELS={
   'gemini-2.5-flash-lite':'Gemini 2.5 Flash-Lite (nhẹ, thông minh)'
 };
 // Model miễn phí phổ biến trên OpenRouter (id có hậu tố :free). Danh sách có thể đổi theo thời gian → có Tự động + ô nhập tùy ý.
-const OPENROUTER_MODELS=['meta-llama/llama-3.3-70b-instruct:free','qwen/qwen3-next-80b-a3b-instruct:free','google/gemma-4-31b-it:free','meta-llama/llama-3.2-3b-instruct:free','nousresearch/hermes-3-llama-3.1-405b:free'];
+const OPENROUTER_MODELS=[
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'qwen/qwen3-next-80b-a3b-instruct:free',
+  'google/gemma-4-31b-it:free',
+  'meta-llama/llama-3.2-3b-instruct:free',
+  'nousresearch/hermes-3-llama-3.1-405b:free',
+  'openai/gpt-oss-120b:free',
+  'poolside/laguna-m.1:free',
+  'liquid/lfm-2.5-1.2b-thinking:free'
+];
 const OR_LABELS={
-  'meta-llama/llama-3.3-70b-instruct:free':'Llama 3.3 70B (mạnh, free)',
-  'qwen/qwen3-next-80b-a3b-instruct:free':'Qwen3 Next 80B (mạnh, free)',
-  'google/gemma-4-31b-it:free':'Gemma 4 31B (Google, free)',
-  'meta-llama/llama-3.2-3b-instruct:free':'Llama 3.2 3B (nhẹ, ít bị giới hạn)',
-  'nousresearch/hermes-3-llama-3.1-405b:free':'Hermes 3 405B (cực lớn, free)'
+  'meta-llama/llama-3.3-70b-instruct:free':'Llama 3.3 70B - mạnh, cân bằng cho câu hỏi tổng hợp',
+  'qwen/qwen3-next-80b-a3b-instruct:free':'Qwen3 Next 80B - suy luận tốt, hợp câu khó',
+  'google/gemma-4-31b-it:free':'Gemma 4 31B - nhanh, ổn cho tiếng Việt phổ thông',
+  'meta-llama/llama-3.2-3b-instruct:free':'Llama 3.2 3B - nhẹ, phản hồi nhanh, ít tốn quota',
+  'nousresearch/hermes-3-llama-3.1-405b:free':'Hermes 3 405B - rất lớn, hợp câu hỏi phức tạp',
+  'openai/gpt-oss-120b:free':'GPT-OSS 120B - mạnh về lập luận và giải thích đáp án',
+  'poolside/laguna-m.1:free':'Laguna M.1 - thiên về coding/lập luận kỹ thuật',
+  'liquid/lfm-2.5-1.2b-thinking:free':'LFM 2.5 1.2B Thinking - nhỏ, có thinking, phản hồi nhanh'
 };
+const MISTRAL_MODELS=[
+  'mistral-small-latest',
+  'ministral-8b-latest',
+  'ministral-3b-latest',
+  'open-mistral-7b',
+  'open-mixtral-8x7b'
+];
+const MISTRAL_LABELS={
+  'mistral-small-latest':'Mistral Small Latest - nhanh, hợp câu hỏi phổ thông',
+  'ministral-8b-latest':'Ministral 8B Latest - nhẹ, phản hồi nhanh',
+  'ministral-3b-latest':'Ministral 3B Latest - rất nhẹ, tiết kiệm',
+  'open-mistral-7b':'Open Mistral 7B - fallback phổ biến',
+  'open-mixtral-8x7b':'Open Mixtral 8x7B - fallback mạnh hơn'
+};
+let mistralModels=[...MISTRAL_MODELS];
+let mistralLabels={...MISTRAL_LABELS};
+let mistralModelLoadTimer=null;
+let mistralModelLoadBusy=false;
+let mistralModelsLoaded=false;
+let mistralModelsLoadError='';
 const PROVIDERS={
-  gemini:{label:'Gemini',keyStore:'gemini_key',modelStore:'gemini_model',keyLab:'🔑 Gemini API Key',keyPh:'Dán API key của Gemini...',models:GEMINI_MODELS,labels:MODEL_LABELS,strict:true},
-  openrouter:{label:'OpenRouter',keyStore:'openrouter_key',modelStore:'openrouter_model',keyLab:'🔑 OpenRouter API Key',keyPh:'Dán API key OpenRouter (sk-or-...)',models:OPENROUTER_MODELS,labels:OR_LABELS,strict:false}
+  gemini:{label:'Gemini',keyStore:'gemini_key',modelStore:'gemini_model',keyLab:'🔑 Gemini API Key',keyPh:'Dán API key của Gemini...',models:GEMINI_MODELS,labels:MODEL_LABELS,strict:true,serverKey:false},
+  openrouter:{label:'OpenRouter',keyStore:'openrouter_key',modelStore:'openrouter_model',keyLab:'🔑 OpenRouter API Key',keyPh:'Dán API key OpenRouter (sk-or-...)',models:OPENROUTER_MODELS,labels:OR_LABELS,strict:false,serverKey:false},
+  mistral:{label:'Mistral AI',keyStore:'mistral_key',modelStore:'mistral_model',keyLab:'🔑 Mistral AI API Key',keyPh:'Dán API key Mistral AI...',models:mistralModels,labels:mistralLabels,strict:false,serverKey:false}
 };
 // Id mặc định OpenRouter cũ đã bị gỡ → xóa khỏi localStorage để khỏi kẹt
 const OR_DEPRECATED=['deepseek/deepseek-r1:free','deepseek/deepseek-chat-v3-0324:free','google/gemini-2.0-flash-exp:free','mistralai/mistral-small-3.1-24b-instruct:free'];
@@ -399,6 +1177,57 @@ function setModel(m){
   _prefetch=null; // model đổi → bỏ câu đã đệm cũ
   ['su-model','ht-model'].forEach(id=>{const el=document.getElementById(id);if(el&&el.value!==selectedModel)el.value=selectedModel;});
 }
+function refreshModelSelects(){
+  ['su-model','ht-model'].forEach(id=>{const el=document.getElementById(id);if(el)fillModelSelect(el);});
+}
+function setMistralModels(models){
+  const clean=[];
+  const labels={};
+  (Array.isArray(models)?models:[]).forEach(item=>{
+    const id=String(item?.id||item||'').trim();
+    if(!id||clean.includes(id))return;
+    clean.push(id);
+    labels[id]=String(item?.label||id).trim();
+  });
+  mistralModels=clean.length?clean:[...MISTRAL_MODELS];
+  mistralLabels=clean.length?labels:{...MISTRAL_LABELS};
+  PROVIDERS.mistral.models=mistralModels;
+  PROVIDERS.mistral.labels=mistralLabels;
+  mistralModelsLoaded=clean.length>0;
+  if(clean.length)mistralModelsLoadError='';
+  if(aiProvider==='mistral'){
+    selectedModel=localStorage.getItem(curCfg().modelStore)||'';
+    refreshModelSelects();
+  }
+}
+function scheduleMistralModelsLoad(){
+  clearTimeout(mistralModelLoadTimer);
+  mistralModelLoadTimer=setTimeout(loadMistralModels,500);
+}
+async function loadMistralModels(){
+  if(mistralModelLoadBusy)return;
+  const key=(document.getElementById('su-key')?.value||curKey()).trim();
+  if(!key)return;
+  mistralModelLoadBusy=true;
+  try{
+    const res=await fetch('/api/gameshow/mistral-models',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key})
+    });
+    if(!res.ok){
+      let msg='Không lấy được danh sách model Mistral';
+      try{const err=await res.json();if(err&&err.error)msg=err.error;}catch{}
+      mistralModelsLoadError=msg;
+      return;
+    }
+    const data=await res.json();
+    setMistralModels(data.models);
+    if(!mistralModelsLoaded)mistralModelsLoadError='Tài khoản Mistral này chưa trả về model chat khả dụng.';
+  }catch{}finally{
+    mistralModelLoadBusy=false;
+  }
+}
 // Đổi nhà cung cấp AI: cập nhật key/model/UI
 function setProvider(p){
   if(!PROVIDERS[p])p='gemini';
@@ -406,11 +1235,15 @@ function setProvider(p){
   _prefetch=null; // provider đổi → bỏ câu đã đệm cũ
   selectedModel=localStorage.getItem(curCfg().modelStore)||'';
   if(curCfg().strict&&selectedModel&&!curCfg().models.includes(selectedModel)){selectedModel='';localStorage.setItem(curCfg().modelStore,'');}
+  const keyWrap=document.getElementById('su-key-wrap');if(keyWrap)keyWrap.classList.toggle('hidden',!!curCfg().serverKey);
   const lab=document.getElementById('su-key-lab');if(lab)lab.textContent=curCfg().keyLab;
   const key=document.getElementById('su-key');if(key){key.placeholder=curCfg().keyPh;key.value=curKey();}
   const wrap=document.getElementById('su-or-custom-wrap');if(wrap)wrap.classList.toggle('hidden',aiProvider!=='openrouter');
   const cust=document.getElementById('su-or-custom');if(cust)cust.value=(aiProvider==='openrouter'&&selectedModel&&!curCfg().models.includes(selectedModel))?selectedModel:'';
-  ['su-model','ht-model'].forEach(id=>{const el=document.getElementById(id);if(el)fillModelSelect(el);});
+  refreshModelSelects();
+  if(aiProvider==='mistral')scheduleMistralModelsLoad();
+  if(mode==='single')$('setup-hint').textContent=aiSetupHint();
+  if(mode==='host')$('setup-hint').textContent='Bạn là quản trò: cần API key (Gemini, OpenRouter hoặc Mistral AI) để tạo câu hỏi cho cả phòng.';
 }
 function initModelSelects(){
   const prov=document.getElementById('su-provider');
@@ -422,6 +1255,8 @@ function initModelSelects(){
   });
   const cust=document.getElementById('su-or-custom');
   if(cust){cust.addEventListener('change',e=>{const v=e.target.value.trim();setModel(v);['su-model','ht-model'].forEach(id=>{const el=document.getElementById(id);if(el)fillModelSelect(el);});toast(v?('Model tùy chỉnh: '+v):'Đã xóa model tùy chỉnh');});}
+  const key=document.getElementById('su-key');
+  if(key){key.addEventListener('input',e=>{localStorage.setItem(curCfg().keyStore,e.target.value.trim());if(aiProvider==='mistral')scheduleMistralModelsLoad();});}
   if(prov)prov.value=aiProvider;
   setProvider(aiProvider); // khởi tạo UI + đổ dropdown lần đầu
 }
@@ -430,17 +1265,54 @@ function parseRetryDelay(body){
     if(d&&d.retryDelay){const m=/(\d+(?:\.\d+)?)s/.exec(d.retryDelay);if(m)return Math.ceil(parseFloat(m[1])*1000);}}catch{}
   return 0;
 }
+function extractFirstJsonObject(txt){
+  const s=String(txt||'');
+  const start=s.indexOf('{');
+  if(start<0)return '';
+  let depth=0,inStr=false,escNext=false;
+  for(let i=start;i<s.length;i++){
+    const ch=s[i];
+    if(inStr){
+      if(escNext){escNext=false;continue;}
+      if(ch==='\\'){escNext=true;continue;}
+      if(ch==='"')inStr=false;
+      continue;
+    }
+    if(ch==='"'){inStr=true;continue;}
+    if(ch==='{')depth++;
+    else if(ch==='}'){
+      depth--;
+      if(depth===0)return s.slice(start,i+1);
+    }
+  }
+  return '';
+}
 // Bóc JSON từ text AI rồi chuẩn hóa thành object câu hỏi hợp lệ (dùng chung mọi nhà cung cấp)
 function normalizeQuestion(raw,topic){
   let txt=String(raw||'').replace(/```json/gi,'').replace(/```/g,'').trim();
   let q;
-  try{q=JSON.parse(txt);}catch{const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('Không đọc được JSON từ AI');q=JSON.parse(m[0]);}
+  try{q=JSON.parse(txt);}catch{
+    const obj=extractFirstJsonObject(txt);
+    if(!obj)throw new Error('Không đọc được JSON từ AI');
+    try{q=JSON.parse(obj);}catch(e){throw new Error('JSON từ AI không hợp lệ: '+e.message);}
+  }
   q.type=q.type==='essay'?'essay':'mc';
   q.difficulty=Math.max(1,Math.min(15,parseInt(q.difficulty)||1));
   q.options=Array.isArray(q.options)?q.options.map(String).filter(Boolean).slice(0,4):[];
   q.content=String(q.content||'').trim();
   q.correctAnswer=String(q.correctAnswer||'').trim();
+  if(q.type==='mc'){
+    const answerKey=q.correctAnswer.trim().toUpperCase().replace(/[\s.):：-]+$/,'');
+    const idx=['A','B','C','D'].indexOf(answerKey);
+    if(idx>=0&&q.options[idx])q.correctAnswer=q.options[idx];
+  }
   q.topic=String(q.topic||topic||'').trim();
+  q.mcEmotion=String(q.mcEmotion||q.emotion||'neutral').trim().toLowerCase();
+  if(!MC_EMOTIONS[q.mcEmotion])q.mcEmotion='neutral';
+  q.mcLine=String(q.mcLine||q.hostLine||q.mcComment||'').trim();
+  if(!q.mcLine)q.mcLine=MC_EMOTIONS[q.mcEmotion].fallback;
+  q.explanation=String(q.explanation||q.reason||q.why||'').trim();
+  if(!q.explanation)q.explanation='Đáp án đúng là "'+q.correctAnswer+'" vì lựa chọn này khớp trực tiếp với dữ kiện của câu hỏi.';
   if(q.type==='mc'&&q.options.length<2)throw new Error('AI trả về thiếu phương án');
   if(!q.content||!q.correctAnswer)throw new Error('AI trả về câu hỏi không hợp lệ');
   q.points=prizeFor(q.difficulty);
@@ -451,7 +1323,7 @@ async function geminiRequest(key,model,payload){
   return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
 }
 async function callGemini(key,topic){
-  const prompt=$('su-prompt').value.replace(/\{\{TOPIC\}\}/g,topic||'kiến thức tổng hợp');
+  const prompt=buildAiPrompt(topic);
   const payload={
     contents:[{parts:[{text:prompt}]}],
     generationConfig:{temperature:1.0,responseMimeType:'application/json'}
@@ -491,7 +1363,7 @@ async function callGemini(key,topic){
 }
 // ─── OpenRouter call (API chuẩn OpenAI, gọi trực tiếp từ browser) ───
 async function callOpenRouter(key,topic){
-  const prompt=$('su-prompt').value.replace(/\{\{TOPIC\}\}/g,topic||'kiến thức tổng hợp');
+  const prompt=buildAiPrompt(topic);
   let res=null, lastErr='';
   const models=selectedModel?[selectedModel,...OPENROUTER_MODELS.filter(m=>m!==selectedModel)]:OPENROUTER_MODELS;
   for(const model of models){
@@ -527,18 +1399,70 @@ async function callOpenRouter(key,topic){
   const txt=data?.choices?.[0]?.message?.content||'';
   return normalizeQuestion(txt,topic);
 }
+async function callMistral(key,topic){
+  await loadMistralModels();
+  if(!mistralModelsLoaded&&mistralModelsLoadError){
+    throw new Error(mistralModelsLoadError);
+  }
+  const prompt=buildAiPrompt(topic);
+  let res=null, lastErr='';
+  const available=PROVIDERS.mistral.models&&PROVIDERS.mistral.models.length?PROVIDERS.mistral.models:MISTRAL_MODELS;
+  const models=selectedModel?[selectedModel,...available.filter(m=>m!==selectedModel)]:available;
+  for(const model of models){
+    let attempt=0;
+    while(attempt<3){
+      res=await fetch('/api/gameshow/mistral',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({key,model,prompt})
+      });
+      if(res.ok)break;
+      const body=await res.text().catch(()=>'');
+      if(res.status===503&&/MISTRAL_API_KEY/i.test(body)) throw new Error('Chưa nhập API key Mistral AI.');
+      if(res.status===429||res.status===503||res.status===500){
+        const wait=1200*(attempt+1);
+        lastErr=res.status===429?'Vượt giới hạn Mistral (429)':'Mistral/model đang bận ('+res.status+')';
+        attempt++;
+        if(attempt<3){ if(typeof onGeminiRetry==='function')onGeminiRetry(model,Math.ceil(wait/1000)); await sleep(wait); continue; }
+        break;
+      }
+      if(res.status===401||res.status===403) throw new Error('API key Mistral AI không hợp lệ hoặc bị từ chối.');
+      if(res.status===404){
+        lastErr='Model '+model+' không khả dụng (404)';
+        if(aiProvider==='mistral'){
+          const next=PROVIDERS.mistral.models.filter(m=>m!==model);
+          setMistralModels(next.map(id=>({id,label:PROVIDERS.mistral.labels[id]||id})));
+          if(selectedModel===model)setModel('');
+        }
+        break;
+      }
+      throw new Error('Mistral lỗi '+res.status+': '+body.slice(0,160));
+    }
+    if(res&&res.ok)break;
+  }
+  if(!res||!res.ok){
+    throw new Error('Không gọi được Mistral AI trên mọi model. Chi tiết: '+(lastErr||'không rõ'));
+  }
+  const data=await res.json();
+  return normalizeQuestion(data.text||'',topic);
+}
 // Điều phối theo nhà cung cấp đang chọn
 async function callAI(topic){
   const key=curKey();
   if(!key)throw new Error('Chưa có API key của '+curCfg().label+'. Hãy nhập ở màn thiết lập.');
+  if(aiProvider==='mistral')return callMistral(key,topic);
   return aiProvider==='openrouter'?callOpenRouter(key,topic):callGemini(key,topic);
 }
 
 // ─── start from setup ───
 async function startFromSetup(){
+  await unlockQuestionAudio();
+  resetQuestionHistory();
   const key=$('su-key').value.trim();
-  if(!key){toast('⚠️ Hãy nhập API key của '+curCfg().label);return;}
-  localStorage.setItem(curCfg().keyStore,key);
+  if(!curCfg().serverKey){
+    if(!key){toast('⚠️ Hãy nhập API key của '+curCfg().label);return;}
+    localStorage.setItem(curCfg().keyStore,key);
+  }
   // OpenRouter: nếu có gõ model id tùy ý thì ưu tiên dùng
   if(aiProvider==='openrouter'){const cv=($('su-or-custom').value||'').trim();if(cv&&cv!==selectedModel)setModel(cv);}
   const topic=$('su-topic').value.trim()||'kiến thức tổng hợp Việt Nam';
@@ -563,7 +1487,8 @@ async function startFromSetup(){
 }
 
 // ─── join ───
-function doJoin(){
+async function doJoin(){
+  await unlockQuestionAudio();
   const name=$('jn-name').value.trim()||'Người chơi';
   const color=$('jn-color').value;
   const code=$('jn-code').value.trim().toUpperCase();
@@ -583,14 +1508,14 @@ function connectSocket(){
   if(socket)return;
   socket=io();
   socket.on('gs_scoreboard',renderScoreboard);
-  socket.on('gs_question',q=>{currentQ=q;answered=false;selectedOpt=null;showQuestion(q);if(!isHost){$('waiting').classList.add('hidden');}});
-  socket.on('gs_reveal',({correctAnswer})=>revealAnswer(correctAnswer));
+  socket.on('gs_question',q=>{currentQ=q;answered=false;selectedOpt=null;rememberQuestion(q);showQuestion(q);if(!isHost){$('waiting').classList.add('hidden');}});
+  socket.on('gs_reveal',({correctAnswer,explanation})=>revealAnswer(correctAnswer,undefined,explanation));
   socket.on('gs_host_granted',()=>{isHost=true;$('host-tools').classList.remove('hidden');toast('Bạn trở thành quản trò');});
 }
 
 // ─── enter game screen ───
 function enterGame(){
-  show('screen-game');
+  showScreen('screen-game');
   const net=mode!=='single';
   $('roomtag').classList.toggle('hidden',!net);
   if(net)$('roomtag').textContent='PHÒNG '+roomCode;
@@ -614,17 +1539,40 @@ function renderScoreboard(list){
   });
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function renderMcLine(q){
+  const el=$('mc-line');
+  const emotion=(q&&MC_EMOTIONS[q.mcEmotion])?q.mcEmotion:'neutral';
+  const text=String(q?.mcLine||MC_EMOTIONS[emotion].fallback).trim();
+  el.dataset.emotion=emotion;
+  el.innerHTML='<span class="mc-ava">'+MC_EMOTIONS[emotion].icon+'</span><span>'+esc(text)+'</span>';
+}
+function hideExplanation(){
+  const el=$('q-explain');
+  el.classList.add('hidden');
+  el.innerHTML='';
+}
+function showExplanation(text){
+  const el=$('q-explain');
+  const body=String(text||'').trim();
+  if(!body){hideExplanation();return;}
+  el.innerHTML='<b>Vì sao đúng:</b> '+esc(body);
+  el.classList.remove('hidden');
+}
 
 // ─── render a question ───
 function showQuestion(q){
+  stopQuestionSpeech();
   answered=false;selectedOpt=null;
   $('q-card').classList.remove('hidden');
   $('waiting').classList.add('hidden');
   $('q-feedback').className='feedback';$('q-feedback').textContent='';
+  renderMcLine(q);
+  hideExplanation();
   $('q-topic').textContent='📚 '+(q.topic||'—');
   $('q-points').textContent='💰 '+fmt(q.points||prizeFor(q.difficulty))+' đ';
   $('q-diff').textContent='Độ khó '+(q.difficulty||1)+'/15';
   $('q-content').textContent=q.content||'';
+  updateSpeechButton(false);
   const ans=$('q-answer');ans.innerHTML='';
   if(q.type==='mc'){
     const grid=document.createElement('div');grid.className='opts';
@@ -645,10 +1593,12 @@ function showQuestion(q){
   }
   // buttons: players & single answer; host doesn't answer
   const canAnswer=(mode==='single')||(mode==='player')||(mode==='host'&&false);
-  $('q-submit').classList.toggle('hidden',!canAnswer);
+  if(canAnswer)$('q-submit').classList.remove('hidden');
+  else $('q-submit').classList.add('hidden');
   $('q-submit').disabled=false;
   $('q-next').classList.add('hidden');
   if(mode==='host'){$('ht-reveal').disabled=false;$('ht-gen').disabled=false;}
+  queueQuestionSpeech(q);
 }
 
 // ─── submit answer ───
@@ -663,11 +1613,11 @@ function submitAnswer(){
     const ok=norm(val)===norm(currentQ.correctAnswer);
     if(ok){singleScore+=currentQ.points;}
     renderScoreboard([{name:singleName,color:singleColor,score:singleScore}]);
-    revealAnswer(currentQ.correctAnswer,ok);
+    revealAnswer(currentQ.correctAnswer,ok,currentQ.explanation);
     showNextOrEnd();
   }else if(mode==='player'){
     socket.emit('gs_answer',{code:roomCode,answer:val},resp=>{
-      if(!resp||!resp.ok){toast((resp&&resp.error)||'Lỗi gửi đáp án');answered=true;return;}
+      if(!resp||!resp.ok){toast((resp&&resp.error)||'Lỗi gửi đáp án');answered=false;$('q-submit').disabled=false;unlockOptions();return;}
       const fb=$('q-feedback');fb.className='feedback '+(resp.correct?'ok':'no');
       fb.textContent=resp.correct?('✅ Chính xác! +'+fmt(resp.points)+' điểm'):'❌ Chưa đúng — chờ quản trò công bố';
       if(resp.correct)markCorrect(val);
@@ -675,11 +1625,12 @@ function submitAnswer(){
   }
 }
 
-function norm(s){return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ');}
+function norm(s){return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');}
 function lockOptions(){document.querySelectorAll('.opt').forEach(o=>o.classList.add('locked'));}
+function unlockOptions(){document.querySelectorAll('.opt').forEach(o=>o.classList.remove('locked'));}
 function markCorrect(val){document.querySelectorAll('.opt').forEach(o=>{if(norm(o.dataset.val)===norm(val))o.classList.add('correct');});}
 
-function revealAnswer(correct,ok){
+function revealAnswer(correct,ok,explanation){
   if(currentQ&&currentQ.type==='mc'){
     document.querySelectorAll('.opt').forEach(o=>{
       o.classList.add('locked');
@@ -690,6 +1641,7 @@ function revealAnswer(correct,ok){
   const fb=$('q-feedback');
   if(ok!==undefined){fb.className='feedback '+(ok?'ok':'no');fb.textContent=ok?('✅ Chính xác! +'+fmt(currentQ.points)+' điểm'):('❌ Sai. Đáp án đúng: '+correct);}
   else{fb.className='feedback ok';fb.textContent='💡 Đáp án đúng: '+correct;}
+  showExplanation(explanation||currentQ?.explanation);
   $('q-submit').disabled=true;answered=true;
 }
 
@@ -697,13 +1649,11 @@ function revealAnswer(correct,ok){
 function showNextOrEnd(){
   singleAsked++;
   if(singleAsked>=singleTotal){
-    setTimeout(()=>{
-      $('q-content').textContent='🏁 Kết thúc! Tổng điểm: '+fmt(singleScore)+' / qua '+singleTotal+' câu.';
-      $('q-answer').innerHTML='';$('q-feedback').textContent='';
-      $('q-submit').classList.add('hidden');
-      $('q-next').classList.remove('hidden');$('q-next').textContent='🔄 Chơi lại';
-      $('q-next').onclick=()=>{singleScore=0;singleAsked=0;renderScoreboard([{name:singleName,color:singleColor,score:0}]);$('q-next').onclick=nextQuestion;generateAndShowLocal($('su-topic').value.trim());};
-    },400);
+    const fb=$('q-feedback');
+    fb.textContent=fb.textContent+' · Kết thúc! Tổng điểm: '+fmt(singleScore)+' / '+singleTotal+' câu.';
+    $('q-submit').classList.add('hidden');
+    $('q-next').classList.remove('hidden');$('q-next').textContent='🔄 Chơi lại';
+    $('q-next').onclick=()=>{singleScore=0;singleAsked=0;resetQuestionHistory();renderScoreboard([{name:singleName,color:singleColor,score:0}]);$('q-next').onclick=nextQuestion;generateAndShowLocal($('su-topic').value.trim());};
   }else{
     $('q-next').classList.remove('hidden');
   }
@@ -714,10 +1664,7 @@ function nextQuestion(){
 // ─── Prefetch: đệm sẵn câu hỏi kế tiếp trong nền cho nhanh ───
 let _prefetch=null; // {topic, promise}
 function primePrefetch(topic){
-  if(!curKey())return;
-  topic=topic||'kiến thức tổng hợp';
-  if(_prefetch&&_prefetch.topic===topic)return; // đã đệm đúng chủ đề
-  _prefetch={topic, promise:callAI(topic).catch(()=>null)};
+  _prefetch=null;
 }
 // Lấy 1 câu: ưu tiên câu đã đệm (đúng chủ đề), không có thì gọi mới; sau đó tự đệm câu kế
 async function getQuestion(topic){
@@ -725,30 +1672,40 @@ async function getQuestion(topic){
   let q=null;
   if(_prefetch&&_prefetch.topic===topic){ q=await _prefetch.promise; _prefetch=null; }
   if(!q){ q=await callAI(topic); }
-  primePrefetch(topic); // bắt đầu đệm câu kế ngay khi câu này sắp hiện
   return q;
 }
 async function generateAndShowLocal(topic){
+  stopQuestionSpeech();
+  currentQ=null;
   $('q-card').classList.remove('hidden');
+  $('mc-line').innerHTML='';
   $('q-content').innerHTML='<span class="spinner"></span> AI đang nghĩ câu hỏi...';
   $('q-answer').innerHTML='';$('q-feedback').textContent='';
+  hideExplanation();
+  updateSpeechButton(false);
   $('q-submit').classList.add('hidden');$('q-next').classList.add('hidden');
   try{
     const q=await getQuestion(topic);
-    currentQ=q;showQuestion(q);
+    currentQ=applyVoiceToQuestion(q);
+    rememberQuestion(currentQ);
+    showQuestion(currentQ);
   }catch(e){
     $('q-content').textContent='⚠️ '+e.message;
+    hideExplanation();
     $('q-next').classList.remove('hidden');$('q-next').textContent='Thử lại';
   }
 }
 
 // ─── host actions ───
 async function hostGenerate(){
+  stopQuestionSpeech();
   const topic=$('ht-topic').value.trim()||'kiến thức tổng hợp';
   $('ht-gen').disabled=true;$('ht-hint').innerHTML='<span class="spinner"></span> AI đang tạo câu hỏi...';
   try{
     const q=await getQuestion(topic);
-    socket.emit('gs_push_question',{code:roomCode,question:q});
+    const question=applyVoiceToQuestion(q);
+    rememberQuestion(question);
+    socket.emit('gs_push_question',{code:roomCode,question});
     $('ht-hint').textContent='Đã gửi câu hỏi tới phòng. Mọi người đang trả lời.';
   }catch(e){
     $('ht-hint').textContent='⚠️ '+e.message;
@@ -762,12 +1719,19 @@ function hostReveal(){
 
 // ─── leave ───
 function leaveGame(){
+  stopQuestionSpeech();
   if(socket&&roomCode){socket.emit('gs_leave_room',{code:roomCode});}
   roomCode=null;isHost=false;currentQ=null;mode=null;
-  show('screen-menu');
+  $('roomtag').classList.add('hidden');
+  $('q-card').classList.add('hidden');
+  $('waiting').classList.add('hidden');
+  $('host-tools').classList.add('hidden');
+  hideExplanation();
+  showScreen('screen-menu');
 }
 
 // Khởi tạo dropdown chọn model (sau khi mọi biến/hằng đã khai báo)
+initVoiceSettings();
 initModelSelects();
 </script>
 </body>

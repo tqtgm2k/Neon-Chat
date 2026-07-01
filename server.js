@@ -1,11 +1,12 @@
 /**
  * ╔═══════════════════════════════════╗
  * ║      NEON CHAT - SERVER v1.0      ║
- * ║   Built for Termux Android        ║
+ * ║      NEON GAMESHOWS - SERVER v1.0 ║
  * ╚═══════════════════════════════════╝
  */
 
 const express = require('express');
+const axios = require('axios');
 const { pool, initDB } = require('./db');
 const { uploadFile, getPresignedUrl, deleteFile } = require('./b2');
 const multer = require('multer');
@@ -18,6 +19,26 @@ const socketIo = require('socket.io');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+
+// ─── Nạp .env cho môi trường dev (không cần thư viện ngoài) ─────────────────────
+// Trên Railway/production các biến đã có sẵn trong process.env, nên loader này chỉ
+// điền những biến CÒN THIẾU và không bao giờ ghi đè giá trị đã có.
+(function loadDotEnv() {
+  try {
+    const envPath = path.join(__dirname, '.env');
+    if (!fs.existsSync(envPath)) return;
+    for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+      const m = line.match(/^\s*([\w.-]+)\s*=\s*(.*)$/);
+      if (!m) continue; // bỏ qua dòng trống và comment (#...)
+      const key = m[1];
+      let val = m[2].trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      if (process.env[key] === undefined) process.env[key] = val;
+    }
+  } catch (e) { /* bỏ qua lỗi đọc .env */ }
+})();
 
 const app = express();
 const server = http.createServer(app);
@@ -103,8 +124,118 @@ function broadcastScoreboard(code) {
 }
 function normalizeAnswer(s) {
   return String(s || '').trim().toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, ' ');
+}
+function publicGameQuestion(q) {
+  const { correctAnswer, explanation, answered, ...pub } = q;
+  return pub;
+}
+function mistralKey() {
+  return process.env.MISTRAL_API_KEY || process.env.MISTRAL_KEY || '';
+}
+function mistralModelLabel(id) {
+  return String(id || '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .trim();
+}
+function isMistralChatModel(model) {
+  const id = String(model?.id || '').toLowerCase();
+  if (!id) return false;
+  if (/embed|moderation|ocr|audio|voxtral|transcribe|rerank/.test(id)) return false;
+
+  const caps = model?.capabilities || {};
+  if (caps.completion_chat === false || caps.chat_completion === false) return false;
+  if (caps.completion_chat === true || caps.chat_completion === true) return true;
+
+  return /mistral|ministral|mixtral|magistral|pixtral/.test(id);
+}
+function formatMistralModel(model) {
+  const id = String(model?.id || '').trim();
+  return { id, label: mistralModelLabel(id) };
+}
+function elevenLabsKey() {
+  return process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_KEY || '';
+}
+function elevenLabsModel() {
+  return process.env.ELEVENLABS_MODEL_ID || 'eleven_flash_v2_5';
+}
+function clampTtsText(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim().slice(0, 2200);
+}
+const ttsBuckets = new Map();
+const ttsCache = new Map();
+function allowTtsRequest(req) {
+  const now = Date.now();
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const prev = ttsBuckets.get(ip) || [];
+  const recent = prev.filter(ts => now - ts < 60_000);
+  if (recent.length >= 20) {
+    ttsBuckets.set(ip, recent);
+    return false;
+  }
+  recent.push(now);
+  ttsBuckets.set(ip, recent);
+  return true;
+}
+function googleTtsCacheKey(text) {
+  return crypto.createHash('sha256').update(`google-translate-tts\nvi\n${text}`).digest('hex');
+}
+function elevenLabsTtsCacheKey(voiceId, key, text) {
+  const keyHash = key ? crypto.createHash('sha256').update(key).digest('hex').slice(0, 16) : 'server';
+  return crypto.createHash('sha256').update(`${elevenLabsModel()}\n${voiceId}\n${keyHash}\n${text}`).digest('hex');
+}
+function isFreeElevenLabsVoice(voice) {
+  const category = String(voice?.category || '').toLowerCase();
+  if (['professional', 'cloned', 'generated'].includes(category)) return false;
+
+  const tiers = Array.isArray(voice?.available_for_tiers) ? voice.available_for_tiers.map(t => String(t).toLowerCase()) : [];
+  if (tiers.length && !tiers.includes('free')) return false;
+
+  const sharing = voice?.sharing || {};
+  if (sharing && sharing.free_users_allowed === false) return false;
+  if (sharing && sharing.status && String(sharing.status).toLowerCase() !== 'enabled') return false;
+
+  return !!voice?.voice_id;
+}
+function formatElevenLabsVoice(voice) {
+  const name = String(voice?.name || 'ElevenLabs voice').trim();
+  const category = String(voice?.category || 'premade').trim();
+  const accent = voice?.labels?.accent ? `, ${voice.labels.accent}` : '';
+  const gender = voice?.labels?.gender ? `${voice.labels.gender}` : category;
+  return {
+    id: String(voice.voice_id).trim(),
+    label: `${name} - ${gender}${accent}`.slice(0, 90)
+  };
+}
+function sendTtsBuffer(res, audio) {
+  res.setHeader('Content-Type', 'audio/mpeg');
+  res.setHeader('Cache-Control', 'private, max-age=300');
+  res.send(audio);
+}
+function rememberTts(key, audio) {
+  ttsCache.set(key, { audio, ts: Date.now() });
+  if (ttsCache.size > 80) {
+    const oldest = [...ttsCache.entries()].sort((a, b) => a[1].ts - b[1].ts).slice(0, 20);
+    oldest.forEach(([k]) => ttsCache.delete(k));
+  }
+}
+
+// Tạo tài khoản owner/admin mặc định nếu chưa tồn tại (chạy ở cả MySQL lẫn JSON).
+async function ensureDefaultUsers() {
+  const defaultUsers = [
+    { id: "owner-001", username: "owner", loginName: "owner", email: null, password: hashPassword("owner123"), role: "owner", color: "#ff00ff", bio: "👑 Owner", badge: "⚡ OWNER", banned: false },
+    { id: "admin-001", username: "admin", loginName: "admin", email: null, password: hashPassword("admin123"), role: "admin", color: "#00ffff", bio: "🛡️ Admin", badge: "🛡️ ADMIN", banned: false }
+  ];
+  let needSave = false;
+  for (const def of defaultUsers) {
+    if (!users.find(u => u.id === def.id)) {
+      users.push(def);
+      needSave = true;
+    }
+  }
+  if (needSave) await saveUsers();
 }
 
 async function initData() {
@@ -115,20 +246,6 @@ async function initData() {
     // Load users từ MySQL
     const [rows] = await pool.execute('SELECT * FROM users');
     users = rows.map(u => ({...u, banned: !!u.banned}));
-
-    // Thêm default accounts nếu chưa có (không ghi đè nếu đã tồn tại)
-    const defaultUsers = [
-      { id: "owner-001", username: "owner", loginName: "owner", password: hashPassword("owner123"), role: "owner", color: "#ff00ff", bio: "👑 Owner", badge: "⚡ OWNER", banned: false },
-      { id: "admin-001", username: "admin", loginName: "admin", password: hashPassword("admin123"), role: "admin", color: "#00ffff", bio: "🛡️ Admin", badge: "🛡️ ADMIN", banned: false }
-    ];
-    let needSave = false;
-    for (const def of defaultUsers) {
-      if (!users.find(u => u.id === def.id)) {
-        users.push(def);
-        needSave = true;
-      }
-    }
-    if (needSave) await saveUsers();
 
     // Load messages từ MySQL
     const [msgRows] = await pool.execute('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 500');
@@ -144,14 +261,18 @@ async function initData() {
 
     console.log(`Loaded ${users.length} users, ${messages.length} messages, ${groups.length} groups from MySQL`);
   } catch (err) {
-    console.error('MySQL error, falling back to JSON:', err.message);
+    console.error('MySQL không khả dụng, dùng lưu trữ JSON cục bộ:', err.message);
     dbReady = false;
     // Fallback JSON
-    if (!fs.existsSync(USERS_FILE)) { users = []; saveUsers(); }
-    else users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-    if (!fs.existsSync(MESSAGES_FILE)) { messages = []; saveMessages(); }
-    else messages = JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf8'));
+    try { users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch (e) { users = []; }
+    try { messages = JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf8')); } catch (e) { messages = []; }
+    if (!Array.isArray(users)) users = [];
+    if (!Array.isArray(messages)) messages = [];
   }
+
+  // Đảm bảo có owner/admin mặc định ở mọi chế độ lưu trữ
+  await ensureDefaultUsers();
+  console.log(`Sẵn sàng: ${users.length} users, ${messages.length} messages, ${groups.length} groups (${dbReady ? 'MySQL' : 'JSON'})`);
 }
 
 async function saveUsers() {
@@ -226,6 +347,7 @@ app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 app.get('/',         (req, res) => res.sendFile(path.join(__dirname, 'public', 'home.html')));
 app.get('/chat',     (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/gameshow', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gameshow.html')));
+app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'icon-192.png')));
 
 function requireAuth(req, res, next) {
   const token = req.headers['x-token'];
@@ -240,6 +362,197 @@ function requireAuth(req, res, next) {
 }
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
+
+app.post('/api/gameshow/google-tts', async (req, res) => {
+  if (!allowTtsRequest(req)) return res.status(429).json({ error: 'Đọc giọng nói quá nhanh, hãy thử lại sau ít phút' });
+
+  const text = clampTtsText(req.body?.text);
+  if (!text) return res.status(400).json({ error: 'Thiếu nội dung cần đọc' });
+  const chunks = [];
+  for (let i = 0; i < text.length; i += 180) chunks.push(text.slice(i, i + 180));
+  const cacheKey = googleTtsCacheKey(text);
+  const cached = ttsCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < 10 * 60_000) return sendTtsBuffer(res, cached.audio);
+  if (cached) ttsCache.delete(cacheKey);
+
+  try {
+    const audioParts = [];
+    for (const q of chunks) {
+      const response = await axios.get('https://translate.google.com/translate_tts', {
+        params: { ie: 'UTF-8', tl: 'vi', client: 'tw-ob', q },
+        headers: {
+          'User-Agent': 'Mozilla/5.0',
+          'Referer': 'https://translate.google.com/'
+        },
+        responseType: 'arraybuffer',
+        timeout: 15000
+      });
+      audioParts.push(Buffer.from(response.data));
+    }
+    const audio = Buffer.concat(audioParts);
+    rememberTts(cacheKey, audio);
+    sendTtsBuffer(res, audio);
+  } catch (err) {
+    const status = err.response?.status || 502;
+    res.status(status >= 400 && status < 500 ? status : 502).json({
+      error: 'Không tạo được giọng Google Translate TTS'
+    });
+  }
+});
+
+app.post('/api/gameshow/tts', async (req, res) => {
+  const key = String(req.body?.apiKey || elevenLabsKey()).trim();
+  if (!key) return res.status(503).json({ error: 'Chưa nhập API key ElevenLabs hoặc cấu hình ELEVENLABS_API_KEY trên server' });
+  if (!allowTtsRequest(req)) return res.status(429).json({ error: 'Đọc giọng nói quá nhanh, hãy thử lại sau ít phút' });
+
+  const text = clampTtsText(req.body?.text);
+  const voiceId = String(req.body?.voiceId || process.env.ELEVENLABS_VOICE_ID || '').trim();
+  if (!text) return res.status(400).json({ error: 'Thiếu nội dung cần đọc' });
+  if (!voiceId) return res.status(400).json({ error: 'Thiếu ID giọng nói ElevenLabs' });
+  if (!/^[A-Za-z0-9_-]+$/.test(voiceId)) return res.status(400).json({ error: 'ID giọng nói không hợp lệ' });
+
+  const cacheKey = elevenLabsTtsCacheKey(voiceId, key, text);
+  const cached = ttsCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < 10 * 60_000) return sendTtsBuffer(res, cached.audio);
+  if (cached) ttsCache.delete(cacheKey);
+
+  try {
+    const payload = {
+      text,
+      model_id: elevenLabsModel(),
+      voice_settings: {
+        stability: 0.45,
+        similarity_boost: 0.8,
+        style: 0.25,
+        use_speaker_boost: true
+      }
+    };
+
+    const response = await axios.post(
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,
+      payload,
+      {
+        headers: {
+          'xi-api-key': key,
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg'
+        },
+        responseType: 'arraybuffer',
+        timeout: 30000
+      }
+    );
+    const audio = Buffer.from(response.data);
+    rememberTts(cacheKey, audio);
+    sendTtsBuffer(res, audio);
+  } catch (err) {
+    const status = err.response?.status || 502;
+    let msg = 'Không tạo được giọng đọc ElevenLabs';
+    if (err.response?.data) {
+      try {
+        const body = Buffer.isBuffer(err.response.data)
+          ? JSON.parse(err.response.data.toString('utf8'))
+          : err.response.data;
+        msg = body.detail?.message || body.detail || body.error || msg;
+      } catch {}
+    } else if (err.message) {
+      msg = err.message;
+    }
+    res.status(status >= 400 && status < 500 ? status : 502).json({ error: String(msg).slice(0, 300) });
+  }
+});
+
+app.post('/api/gameshow/eleven-voices', async (req, res) => {
+  if (!allowTtsRequest(req)) return res.status(429).json({ error: 'Tải danh sách giọng quá nhanh, hãy thử lại sau ít phút' });
+
+  const key = String(req.body?.apiKey || elevenLabsKey()).trim();
+  const headers = { 'Accept': 'application/json' };
+  if (key) headers['xi-api-key'] = key;
+
+  try {
+    const { data } = await axios.get('https://api.elevenlabs.io/v2/voices', {
+      params: {
+        page_size: 100,
+        category: 'premade'
+      },
+      headers,
+      timeout: 15000
+    });
+    const list = Array.isArray(data?.voices) ? data.voices : [];
+    const seen = new Set();
+    const voices = list
+      .filter(isFreeElevenLabsVoice)
+      .map(formatElevenLabsVoice)
+      .filter(v => {
+        if (!v.id || seen.has(v.id)) return false;
+        seen.add(v.id);
+        return true;
+      });
+    res.json({ ok: true, voices });
+  } catch (err) {
+    const status = err.response?.status || 502;
+    const msg = err.response?.data?.detail?.message || err.response?.data?.message || err.message || 'Không tải được danh sách giọng ElevenLabs';
+    res.status(status >= 400 && status < 500 ? status : 502).json({ error: String(msg).slice(0, 300) });
+  }
+});
+
+app.post('/api/gameshow/mistral', async (req, res) => {
+  const key = String(req.body?.key || mistralKey()).trim();
+  if (!key) return res.status(503).json({ error: 'Chưa cấu hình MISTRAL_API_KEY trên server' });
+  const prompt = String(req.body?.prompt || '').trim();
+  const model = String(req.body?.model || 'mistral-small-latest').trim();
+  if (!prompt) return res.status(400).json({ error: 'Thiếu prompt cho Mistral AI' });
+  if (!/^[A-Za-z0-9_.:+-]+$/.test(model)) return res.status(400).json({ error: 'Model Mistral không hợp lệ' });
+  try {
+    const { data } = await axios.post('https://api.mistral.ai/v1/chat/completions', {
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 1.0,
+      response_format: { type: 'json_object' }
+    }, {
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000
+    });
+    const text = data?.choices?.[0]?.message?.content || '';
+    res.json({ ok: true, text });
+  } catch (err) {
+    const status = err.response?.status || 502;
+    const msg = err.response?.data?.message || err.response?.data?.error?.message || err.message || 'Không gọi được Mistral AI';
+    res.status(status >= 400 && status < 500 ? status : 502).json({ error: String(msg).slice(0, 300) });
+  }
+});
+
+app.post('/api/gameshow/mistral-models', async (req, res) => {
+  const key = String(req.body?.key || mistralKey()).trim();
+  if (!key) return res.status(503).json({ error: 'Chưa nhập API key Mistral AI' });
+
+  try {
+    const { data } = await axios.get('https://api.mistral.ai/v1/models', {
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Accept': 'application/json'
+      },
+      timeout: 15000
+    });
+    const list = Array.isArray(data?.data) ? data.data : [];
+    const seen = new Set();
+    const models = list
+      .filter(isMistralChatModel)
+      .map(formatMistralModel)
+      .filter(m => {
+        if (!m.id || seen.has(m.id)) return false;
+        seen.add(m.id);
+        return true;
+      });
+    res.json({ ok: true, models });
+  } catch (err) {
+    const status = err.response?.status || 502;
+    const msg = err.response?.data?.message || err.response?.data?.error?.message || err.message || 'Không lấy được danh sách model Mistral';
+    res.status(status >= 400 && status < 500 ? status : 502).json({ error: String(msg).slice(0, 300) });
+  }
+});
 
 // Login
 app.post('/api/guest', (req, res) => {
@@ -912,8 +1225,7 @@ io.on('connection', (socket) => {
     if (typeof cb === 'function') cb({ ok: true, code, isHost: room.hostSocket === socket.id });
     // Nếu đang có câu hỏi dở, gửi luôn cho người mới (ẩn đáp án)
     if (room.currentQuestion) {
-      const { correctAnswer, ...pub } = room.currentQuestion;
-      socket.emit('gs_question', pub);
+      socket.emit('gs_question', publicGameQuestion(room.currentQuestion));
     }
     broadcastScoreboard(code);
   });
@@ -927,12 +1239,17 @@ io.on('connection', (socket) => {
       type: question.type === 'essay' ? 'essay' : 'mc',
       content: String(question.content || '').slice(0, 1000),
       options: Array.isArray(question.options) ? question.options.slice(0, 4).map(o => String(o).slice(0, 300)) : [],
+      mcEmotion: String(question.mcEmotion || 'neutral').slice(0, 24),
+      mcLine: String(question.mcLine || '').slice(0, 500),
+      voiceProvider: ['google', 'browser', 'elevenlabs'].includes(question.voiceProvider) ? question.voiceProvider : 'google',
+      elevenVoiceId: String(question.elevenVoiceId || '').slice(0, 80),
+      voiceSpeed: Math.max(0.75, Math.min(1.35, parseFloat(question.voiceSpeed) || 1)),
       correctAnswer: String(question.correctAnswer || ''),
+      explanation: String(question.explanation || '').slice(0, 1000),
       answered: new Set()
     };
     room.currentQuestion.points = prizeForDifficulty(room.currentQuestion.difficulty);
-    const { correctAnswer, answered, ...pub } = room.currentQuestion;
-    io.to(code).emit('gs_question', pub);
+    io.to(code).emit('gs_question', publicGameQuestion(room.currentQuestion));
     broadcastScoreboard(code);
   });
 
@@ -960,7 +1277,10 @@ io.on('connection', (socket) => {
   socket.on('gs_reveal', ({ code }) => {
     const room = gameRooms.get(code);
     if (!room || room.hostSocket !== socket.id || !room.currentQuestion) return;
-    io.to(code).emit('gs_reveal', { correctAnswer: room.currentQuestion.correctAnswer });
+    io.to(code).emit('gs_reveal', {
+      correctAnswer: room.currentQuestion.correctAnswer,
+      explanation: room.currentQuestion.explanation
+    });
   });
 
   socket.on('gs_leave_room', ({ code }) => {
@@ -1006,8 +1326,8 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`╠${divider}╣`);
   console.log(`║  👑 owner  / owner123  [OWNER]              ║`);
   console.log(`║  🛡️  admin  / admin123  [ADMIN]              ║`);
-  console.log(`║  👤 user1  / user1     [USER]               ║`);
-  console.log(`║  👤 user2  / user2     [USER]               ║`);
+  console.log(`║  👤 User thường: đăng ký bằng email         ║`);
+  console.log(`║  🎭 Khách: vào nhanh không cần tài khoản     ║`);
   console.log(`╚${divider}╝\n`);
   console.log(`  Open your browser and go to http://localhost:${PORT}`);
   console.log(`  Press Ctrl+C to stop the server\n`);
